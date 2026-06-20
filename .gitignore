@@ -1,0 +1,16 @@
+# Backend
+backend/finmate.db
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
+backend/venv/
+*.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/out/
+
+# OS
+.DS_Store

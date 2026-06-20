@@ -1,0 +1,33 @@
+# Core
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+pydantic==2.9.2
+python-dotenv==1.0.1
+python-multipart==0.0.9
+httpx==0.27.2
+
+# Database
+psycopg2-binary==2.9.9
+alembic==1.13.2
+
+# AI / LLM
+groq==0.11.0
+google-generativeai==0.8.3
+langchain==0.3.7
+langgraph==0.2.48
+langchain-groq==0.2.1
+langchain-google-genai==2.0.5
+
+# Vector DB
+qdrant-client==1.12.1
+
+# Graph DB
+neo4j==5.25.0
+
+# File parsing
+pandas==2.2.3
+pdfplumber==0.11.4
+
+# Utilities
+tenacity==9.0.0

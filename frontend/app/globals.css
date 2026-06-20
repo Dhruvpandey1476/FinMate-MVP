@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  background: #070A12;
+  color: #E8ECF6;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Ledger signature: every numeric financial figure gets the same fixed-width,
+   tabular treatment with a faint underline tick — this is FinMate's one
+   recurring visual signature, used consistently instead of scattered effects. */
+.ledger {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.glass {
+  background: rgba(17, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.glass-strong {
+  background: rgba(17, 23, 42, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #1E2740;
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+::selection {
+  background: rgba(39, 224, 166, 0.3);
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid #27E0A6;
+  outline-offset: 2px;
+}
