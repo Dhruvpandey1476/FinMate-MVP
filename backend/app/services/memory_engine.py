@@ -185,6 +185,92 @@ def _keyword_search(db: Session, user_id: int, query: str, top_k: int) -> list:
     return [m for _, m in scored[:top_k]]
 
 
+def distill_from_message(db: Session, user_id: int, user_message: str):
+    """
+    Turn a user's chat message into durable memories — this is what makes FinMate
+    actually *remember* users across sessions. Best-effort: never breaks the chat.
+
+    Extracts up to 3 durable facts (semantic/behavioral/episodic) and stores only
+    genuinely new ones (dedup against existing content).
+    """
+    msg = (user_message or "").strip()
+    if len(msg) < 15:
+        return
+
+    prompt = f"""A user said the following to their AI financial advisor:
+"{msg}"
+
+Extract 0-3 DURABLE facts worth remembering long-term about this user's finances,
+preferences, life plans, or behavior. Ignore one-off questions with no lasting signal.
+
+Respond as a JSON array of objects with keys:
+- "memory_type": one of "semantic" (stable preference/fact), "behavioral" (a pattern), "episodic" (a specific event/plan)
+- "content": a concise third-person statement (e.g. "User plans to buy a house in 2 years")
+- "importance": 0.3-0.9
+
+Return [] if nothing is worth remembering."""
+
+    try:
+        result = llm_client.generate_json(prompt=prompt, fallback=[])
+    except Exception:
+        return
+    if not isinstance(result, list):
+        return
+
+    existing = {m.content.strip().lower() for m in
+                db.query(models.Memory).filter(models.Memory.user_id == user_id).all()}
+
+    for item in result[:3]:
+        content = (item.get("content") or "").strip()
+        mtype = item.get("memory_type", "episodic")
+        if mtype not in ("semantic", "behavioral", "episodic"):
+            mtype = "episodic"
+        if not content or content.lower() in existing:
+            continue
+        try:
+            imp = float(item.get("importance", 0.5))
+        except (TypeError, ValueError):
+            imp = 0.5
+        add_memory(db, user_id, mtype, content, max(0.3, min(imp, 0.9)))
+        existing.add(content.lower())
+
+
+def detect_behavioral_patterns(db: Session, user_id: int):
+    """
+    Derive behavioral memories from transaction data (runs after an import).
+    Deterministic + cheap — no LLM needed. Dedups against existing memories.
+    """
+    from collections import defaultdict
+    txns = db.query(models.Transaction).filter(models.Transaction.user_id == user_id).all()
+    if len(txns) < 5:
+        return
+
+    cat_totals = defaultdict(float)
+    cat_counts = defaultdict(int)
+    for t in txns:
+        if t.amount < 0:
+            cat_totals[t.category] += -t.amount
+            cat_counts[t.category] += 1
+    total = sum(cat_totals.values()) or 1
+
+    existing = {m.content.strip().lower() for m in
+                db.query(models.Memory).filter(models.Memory.user_id == user_id).all()}
+    facts = []
+    for cat, amt in cat_totals.items():
+        share = amt / total
+        if share > 0.15 and cat_counts[cat] >= 3:
+            facts.append((f"User consistently spends a large share ({share*100:.0f}%) of expenses on '{cat}'.", 0.7))
+
+    recurring = {t.merchant or t.category for t in txns if t.is_recurring and t.amount < 0}
+    if recurring:
+        facts.append((f"User has recurring charges from: {', '.join(sorted(recurring))[:120]}.", 0.6))
+
+    for content, imp in facts:
+        if content.lower() not in existing:
+            add_memory(db, user_id, "behavioral", content, imp)
+            existing.add(content.lower())
+
+
 def reindex_all(db: Session):
     """Reindex all memories in Qdrant (used during startup/migration)."""
     if not ensure_collection():

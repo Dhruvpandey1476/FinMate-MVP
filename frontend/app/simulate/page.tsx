@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { PageHeader, GlassCard } from "@/components/GlassCard";
+import { ChartBox } from "@/components/ChartBox";
 import { api, formatINR } from "@/lib/api";
 
 const SCENARIOS = [
@@ -84,28 +85,30 @@ export default function SimulatePage() {
           </form>
         </GlassCard>
 
-        <GlassCard className="lg:col-span-2">
+        <GlassCard className="lg:col-span-2 min-w-0">
           <p className="text-sm text-fog mb-2">Projected Net Worth</p>
           {!result && <p className="text-sm text-mist">Run a scenario to see the projection.</p>}
           {result && (
             <>
               <p className="text-sm text-white mb-4">{result.summary}</p>
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={chartData}>
-                  <CartesianGrid stroke="#1E2740" vertical={false} />
-                  <XAxis dataKey="month" stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
-                    label={{ value: "Months ahead", position: "insideBottom", offset: -2, fill: "#5E6A87", fontSize: 11 }} />
-                  <YAxis stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
-                    tickFormatter={(v) => formatINR(v, { compact: true })} />
-                  <Tooltip
-                    contentStyle={{ background: "#11172A", border: "1px solid #1E2740", borderRadius: 12, fontSize: 12 }}
-                    formatter={(v: number) => formatINR(v)}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="baseline" stroke="#5E6A87" strokeWidth={2} dot={false} name="Current trajectory" />
-                  <Line type="monotone" dataKey="projected" stroke="#27E0A6" strokeWidth={2.5} dot={false} name="With this scenario" />
-                </LineChart>
-              </ResponsiveContainer>
+              <ChartBox height={260}>
+                {(w) => (
+                  <LineChart width={w} height={260} data={chartData}>
+                    <CartesianGrid stroke="#1E2740" vertical={false} />
+                    <XAxis dataKey="month" stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
+                      label={{ value: "Months ahead", position: "insideBottom", offset: -2, fill: "#5E6A87", fontSize: 11 }} />
+                    <YAxis stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => formatINR(v, { compact: true })} />
+                    <Tooltip
+                      contentStyle={{ background: "#11172A", border: "1px solid #1E2740", borderRadius: 12, fontSize: 12 }}
+                      formatter={(v: number) => formatINR(v)}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="baseline" stroke="#5E6A87" strokeWidth={2} dot={false} name="Current trajectory" />
+                    <Line type="monotone" dataKey="projected" stroke="#27E0A6" strokeWidth={2.5} dot={false} name="With this scenario" />
+                  </LineChart>
+                )}
+              </ChartBox>
             </>
           )}
         </GlassCard>

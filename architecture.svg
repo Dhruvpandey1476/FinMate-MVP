@@ -1,0 +1,316 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" font-family="'Inter', 'Segoe UI', sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="900">
+      <stop offset="0%" stop-color="#070A12"/>
+      <stop offset="100%" stop-color="#0F1629"/>
+    </linearGradient>
+    <linearGradient id="fr-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E2740"/>
+      <stop offset="100%" stop-color="#11172A"/>
+    </linearGradient>
+    <linearGradient id="be-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1A2238"/>
+      <stop offset="100%" stop-color="#0D1321"/>
+    </linearGradient>
+    <linearGradient id="mint-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#27E0A6"/>
+      <stop offset="100%" stop-color="#1CB884"/>
+    </linearGradient>
+    <linearGradient id="violet-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C5DFC"/>
+      <stop offset="100%" stop-color="#6240E8"/>
+    </linearGradient>
+    <linearGradient id="gold-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0B860"/>
+      <stop offset="100%" stop-color="#D4953E"/>
+    </linearGradient>
+    <linearGradient id="rose-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF6B7A"/>
+      <stop offset="100%" stop-color="#E8505F"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+    <marker id="arrow-mint" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#27E0A6" opacity="0.7"/>
+    </marker>
+    <marker id="arrow-violet" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#7C5DFC" opacity="0.7"/>
+    </marker>
+    <marker id="arrow-gold" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#F0B860" opacity="0.7"/>
+    </marker>
+    <marker id="arrow-rose" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#FF6B7A" opacity="0.7"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="900" fill="url(#bg)"/>
+
+  <!-- ===== TITLE ===== -->
+  <text x="700" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#E8ECF6" letter-spacing="1">FinMate — Architecture</text>
+  <text x="700" y="58" text-anchor="middle" font-size="12" fill="#5E6A87">Agentic Financial Operating System</text>
+
+  <!-- ===== LAYER DIVIDERS ===== -->
+  <rect x="20" y="72" width="1360" height="1" fill="#1E2740" opacity="0.5"/>
+  <text x="30" y="88" font-size="10" fill="#5E6A87" font-weight="600" letter-spacing="2">PRESENTATION LAYER</text>
+  <rect x="20" y="380" width="1360" height="1" fill="#1E2740" opacity="0.5"/>
+  <text x="30" y="396" font-size="10" fill="#5E6A87" font-weight="600" letter-spacing="2">AGENT LAYER</text>
+  <rect x="20" y="590" width="1360" height="1" fill="#1E2740" opacity="0.5"/>
+  <text x="30" y="606" font-size="10" fill="#5E6A87" font-weight="600" letter-spacing="2">SERVICE LAYER</text>
+  <rect x="20" y="800" width="1360" height="1" fill="#1E2740" opacity="0.5"/>
+  <text x="30" y="816" font-size="10" fill="#5E6A87" font-weight="600" letter-spacing="2">DATA LAYER</text>
+
+  <!-- ============================================================ -->
+  <!-- PRESENTATION LAYER: FRONTEND                                 -->
+  <!-- ============================================================ -->
+
+  <!-- Frontend app box -->
+  <rect x="40" y="94" width="1320" height="278" rx="12" fill="url(#fr-grad)" stroke="#1E2740" stroke-width="1" filter="url(#shadow)"/>
+  <text x="60" y="116" font-size="13" font-weight="600" fill="#E8ECF6">Frontend</text>
+  <text x="60" y="132" font-size="10" fill="#5E6A87">Next.js 15 + TypeScript + Tailwind CSS + Recharts + Lucide</text>
+
+  <!-- Sidebar -->
+  <rect x="60" y="148" width="160" height="210" rx="8" fill="#11172A" stroke="#1E2740" stroke-width="1"/>
+  <text x="80" y="168" font-size="10" font-weight="600" fill="#27E0A6">Sidebar</text>
+  <text x="140" y="168" font-size="9" fill="#5E6A87">(Navigation)</text>
+  <line x1="75" y1="176" x2="205" y2="176" stroke="#1E2740" stroke-width="1"/>
+  <text x="78" y="192" font-size="9" fill="#8B96AD"> Dashboard</text>
+  <text x="78" y="208" font-size="9" fill="#8B96AD"> Financial Twin</text>
+  <text x="78" y="224" font-size="9" fill="#8B96AD"> AI CFO Chat</text>
+  <text x="78" y="240" font-size="9" fill="#8B96AD"> Goals</text>
+  <text x="78" y="256" font-size="9" fill="#8B96AD"> Simulations</text>
+  <text x="78" y="272" font-size="9" fill="#8B96AD"> Insights</text>
+  <text x="78" y="288" font-size="9" fill="#8B96AD"> Memory Timeline</text>
+  <text x="78" y="304" font-size="9" fill="#8B96AD"> Upload Data</text>
+  <text x="78" y="320" font-size="9" fill="#8B96AD"> Settings</text>
+  <rect x="70" y="340" width="140" height="8" rx="4" fill="#1E2740"/>
+  <rect x="70" y="340" width="84" height="8" rx="4" fill="#27E0A6" opacity="0.4"/>
+
+  <!-- Pages -->
+  <text x="245" y="165" font-size="10" font-weight="600" fill="#E8ECF6">Pages (App Router)</text>
+
+  <rect x="245" y="174" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="315" y="192" text-anchor="middle" font-size="9" font-weight="500" fill="#27E0A6">/</text>
+  <text x="315" y="204" text-anchor="middle" font-size="8" fill="#8B96AD">Dashboard</text>
+
+  <rect x="398" y="174" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="468" y="192" text-anchor="middle" font-size="9" font-weight="500" fill="#7C5DFC">/twin</text>
+  <text x="468" y="204" text-anchor="middle" font-size="8" fill="#8B96AD">Financial Twin</text>
+
+  <rect x="551" y="174" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="621" y="192" text-anchor="middle" font-size="9" font-weight="500" fill="#F0B860">/chat</text>
+  <text x="621" y="204" text-anchor="middle" font-size="8" fill="#8B96AD">AI CFO Chat</text>
+
+  <rect x="704" y="174" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="774" y="192" text-anchor="middle" font-size="9" font-weight="500" fill="#FF6B7A">/goals</text>
+  <text x="774" y="204" text-anchor="middle" font-size="8" fill="#8B96AD">Goals</text>
+
+  <rect x="857" y="174" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="927" y="192" text-anchor="middle" font-size="9" font-weight="500" fill="#27E0A6">/simulate</text>
+  <text x="927" y="204" text-anchor="middle" font-size="8" fill="#8B96AD">Simulations</text>
+
+  <rect x="1010" y="174" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="1080" y="192" text-anchor="middle" font-size="9" font-weight="500" fill="#7C5DFC">/insights</text>
+  <text x="1080" y="204" text-anchor="middle" font-size="8" fill="#8B96AD">Insights</text>
+
+  <rect x="1163" y="174" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="1233" y="192" text-anchor="middle" font-size="9" font-weight="500" fill="#F0B860">/memory</text>
+  <text x="1233" y="204" text-anchor="middle" font-size="8" fill="#8B96AD">Memory Timeline</text>
+
+  <!-- Second row pages -->
+  <rect x="245" y="224" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="315" y="242" text-anchor="middle" font-size="9" font-weight="500" fill="#FF6B7A">/upload</text>
+  <text x="315" y="254" text-anchor="middle" font-size="8" fill="#8B96AD">Upload Data</text>
+
+  <rect x="398" y="224" width="140" height="40" rx="6" fill="#0D1321" stroke="#1E2740" stroke-width="1"/>
+  <text x="468" y="242" text-anchor="middle" font-size="9" font-weight="500" fill="#27E0A6">/settings</text>
+  <text x="468" y="254" text-anchor="middle" font-size="8" fill="#8B96AD">Settings</text>
+
+  <!-- Shared Components -->
+  <text x="245" y="298" font-size="10" font-weight="600" fill="#E8ECF6">Shared Components</text>
+  <rect x="245" y="306" width="120" height="30" rx="6" fill="#1E2740" opacity="0.6"/>
+  <text x="305" y="325" text-anchor="middle" font-size="9" fill="#8B96AD">GlassCard</text>
+  <rect x="378" y="306" width="120" height="30" rx="6" fill="#1E2740" opacity="0.6"/>
+  <text x="438" y="325" text-anchor="middle" font-size="9" fill="#8B96AD">PageHeader</text>
+  <rect x="511" y="306" width="120" height="30" rx="6" fill="#1E2740" opacity="0.6"/>
+  <text x="571" y="325" text-anchor="middle" font-size="9" fill="#8B96AD">StatRow</text>
+
+  <!-- API Client -->
+  <rect x="700" y="306" width="200" height="30" rx="6" fill="#0D1321" stroke="#7C5DFC" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="800" y="325" text-anchor="middle" font-size="9" fill="#7C5DFC">lib/api.ts  —  API client</text>
+
+  <!-- Layout -->
+  <rect x="940" y="306" width="160" height="30" rx="6" fill="#0D1321" stroke="#27E0A6" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="1020" y="325" text-anchor="middle" font-size="9" fill="#27E0A6">app/layout.tsx  +  globals.css</text>
+
+  <!-- Arrow: Frontend -> Backend -->
+  <line x1="700" y1="372" x2="700" y2="405" stroke="#27E0A6" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow-mint)" opacity="0.7"/>
+  <text x="712" y="392" font-size="8" fill="#5E6A87">HTTP / REST</text>
+
+  <!-- ============================================================ -->
+  <!-- AGENT LAYER                                                  -->
+  <!-- ============================================================ -->
+
+  <!-- Backend app box -->
+  <rect x="40" y="402" width="1320" height="182" rx="12" fill="url(#be-grad)" stroke="#1E2740" stroke-width="1" filter="url(#shadow)"/>
+  <text x="60" y="424" font-size="13" font-weight="600" fill="#E8ECF6">Backend</text>
+  <text x="60" y="440" font-size="10" fill="#5E6A87">FastAPI + Python</text>
+
+  <!-- Routers -->
+  <rect x="60" y="450" width="195" height="120" rx="8" fill="#11172A" stroke="#1E2740" stroke-width="1"/>
+  <text x="80" y="470" font-size="10" font-weight="600" fill="#7C5DFC">Routers</text>
+  <text x="80" y="490" font-size="9" fill="#8B96AD"> &#x2022; chat.py</text>
+  <text x="80" y="506" font-size="9" fill="#8B96AD"> &#x2022; goals.py</text>
+  <text x="80" y="522" font-size="9" fill="#8B96AD"> &#x2022; insights.py</text>
+  <text x="80" y="538" font-size="9" fill="#8B96AD"> &#x2022; memory.py</text>
+  <text x="80" y="554" font-size="9" fill="#8B96AD"> &#x2022; profile.py</text>
+  <text x="80" y="570" font-size="9" fill="#8B96AD"> &#x2022; simulate.py | twin.py | upload.py</text>
+
+  <!-- Arrow: Routers -> Agents -->
+  <line x1="255" y1="510" x2="287" y2="510" stroke="#7C5DFC" stroke-width="1.5" marker-end="url(#arrow-violet)" opacity="0.7"/>
+
+  <!-- Agents -->
+  <rect x="290" y="450" width="550" height="120" rx="8" fill="#11172A" stroke="#1E2740" stroke-width="1"/>
+  <text x="310" y="470" font-size="10" font-weight="600" fill="#F0B860">Specialized Agents</text>
+
+  <!-- 4 agent boxes -->
+  <rect x="305" y="483" width="120" height="34" rx="6" fill="#0D1321" stroke="#F0B860" stroke-width="1"/>
+  <text x="365" y="500" text-anchor="middle" font-size="8" font-weight="600" fill="#F0B860">AI CFO Agent</text>
+  <text x="365" y="512" text-anchor="middle" font-size="7" fill="#5E6A87">4-node pipeline</text>
+
+  <rect x="437" y="483" width="120" height="34" rx="6" fill="#0D1321" stroke="#27E0A6" stroke-width="1"/>
+  <text x="497" y="500" text-anchor="middle" font-size="8" font-weight="600" fill="#27E0A6">Scenario Simulator</text>
+  <text x="497" y="512" text-anchor="middle" font-size="7" fill="#5E6A87">What-if projections</text>
+
+  <rect x="569" y="483" width="120" height="34" rx="6" fill="#0D1321" stroke="#7C5DFC" stroke-width="1"/>
+  <text x="629" y="500" text-anchor="middle" font-size="8" font-weight="600" fill="#7C5DFC">Goal Planner</text>
+  <text x="629" y="512" text-anchor="middle" font-size="7" fill="#5E6A87">Timeline generation</text>
+
+  <rect x="701" y="483" width="120" height="34" rx="6" fill="#0D1321" stroke="#FF6B7A" stroke-width="1"/>
+  <text x="761" y="500" text-anchor="middle" font-size="8" font-weight="600" fill="#FF6B7A">Opportunity Discovery</text>
+  <text x="761" y="512" text-anchor="middle" font-size="7" fill="#5E6A87">Spending leak detection</text>
+
+  <!-- CFO Agent pipeline detail -->
+  <rect x="305" y="526" width="516" height="30" rx="6" fill="#1E2740" opacity="0.5"/>
+  <text x="315" y="544" font-size="7" fill="#5E6A87">Pipeline:  Financial Analysis</text>
+  <polygon points="435,537 445,541 435,545" fill="#5E6A87" opacity="0.5"/>
+  <text x="450" y="544" font-size="7" fill="#5E6A87">Memory Retrieval</text>
+  <polygon points="546,537 556,541 546,545" fill="#5E6A87" opacity="0.5"/>
+  <text x="561" y="544" font-size="7" fill="#5E6A87">Goal Context</text>
+  <polygon points="642,537 652,541 642,545" fill="#5E6A87" opacity="0.5"/>
+  <text x="657" y="544" font-size="7" fill="#5E6A87">Recommendation</text>
+
+  <!-- Arrow: Agents -> Services -->
+  <line x1="565" y1="570" x2="565" y2="584" stroke="#F0B860" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow-gold)" opacity="0.7"/>
+
+  <!-- Optional LLM -->
+  <rect x="900" y="450" width="195" height="50" rx="8" fill="#0D1321" stroke="#F0B860" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="920" y="473" font-size="9" font-weight="600" fill="#F0B860">Optional LLM Backend</text>
+  <text x="920" y="490" font-size="8" fill="#5E6A87">Gemini / OpenAI (off by default)</text>
+
+  <!-- Models -->
+  <rect x="900" y="512" width="195" height="58" rx="8" fill="#11172A" stroke="#1E2740" stroke-width="1"/>
+  <text x="920" y="532" font-size="10" font-weight="600" fill="#FF6B7A">Data Models</text>
+  <text x="920" y="550" font-size="8" fill="#8B96AD">User, Transaction, Goal</text>
+  <text x="920" y="564" font-size="8" fill="#8B96AD">Asset, Liability, Memory</text>
+
+  <!-- Arrow: Models <-> Services -->
+  <line x1="900" y1="540" x2="843" y2="540" stroke="#FF6B7A" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arrow-rose)" opacity="0.5"/>
+  <line x1="843" y1="544" x2="900" y2="544" stroke="#FF6B7A" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>
+
+  <!-- ============================================================ -->
+  <!-- SERVICE LAYER                                                -->
+  <!-- ============================================================ -->
+
+  <rect x="40" y="610" width="1320" height="182" rx="12" fill="url(#be-grad)" stroke="#1E2740" stroke-width="1" filter="url(#shadow)"/>
+  <text x="60" y="632" font-size="13" font-weight="600" fill="#E8ECF6">Core Services</text>
+
+  <!-- Service boxes -->
+  <rect x="60" y="648" width="235" height="70" rx="8" fill="#11172A" stroke="#27E0A6" stroke-width="1"/>
+  <text x="80" y="668" font-size="10" font-weight="600" fill="#27E0A6">Financial Twin</text>
+  <text x="80" y="686" font-size="8" fill="#8B96AD">Real-time net worth, cash flow,</text>
+  <text x="80" y="700" font-size="8" fill="#8B96AD">savings rate, health score</text>
+
+  <rect x="310" y="648" width="235" height="70" rx="8" fill="#11172A" stroke="#7C5DFC" stroke-width="1"/>
+  <text x="330" y="668" font-size="10" font-weight="600" fill="#7C5DFC">Memory Engine</text>
+  <text x="330" y="686" font-size="8" fill="#8B96AD">Episodic / Semantic / Behavioral</text>
+  <text x="330" y="700" font-size="8" fill="#8B96AD">Keyword-ranked retrieval</text>
+
+  <rect x="560" y="648" width="235" height="70" rx="8" fill="#11172A" stroke="#F0B860" stroke-width="1"/>
+  <text x="580" y="668" font-size="10" font-weight="600" fill="#F0B860">LLM Client</text>
+  <text x="580" y="686" font-size="8" fill="#8B96AD">Gemini / OpenAI adapter</text>
+  <text x="580" y="700" font-size="8" fill="#8B96AD">Fallback to rule engine</text>
+
+  <rect x="810" y="648" width="235" height="70" rx="8" fill="#11172A" stroke="#FF6B7A" stroke-width="1"/>
+  <text x="830" y="668" font-size="10" font-weight="600" fill="#FF6B7A">Wealth Graph</text>
+  <text x="830" y="686" font-size="8" fill="#8B96AD">Relational graph entities,</text>
+  <text x="830" y="700" font-size="8" fill="#8B96AD">Neo4j upgrade path</text>
+
+  <rect x="1060" y="648" width="235" height="70" rx="8" fill="#11172A" stroke="#27E0A6" stroke-width="1"/>
+  <text x="1080" y="668" font-size="10" font-weight="600" fill="#27E0A6">Parser Service</text>
+  <text x="1080" y="686" font-size="8" fill="#8B96AD">CSV / PDF transaction</text>
+  <text x="1080" y="700" font-size="8" fill="#8B96AD">extraction &amp; import</text>
+
+  <!-- Service communication arrows -->
+  <line x1="295" y1="683" x2="310" y2="683" stroke="#5E6A87" stroke-width="1" marker-end="url(#arrow-mint)" opacity="0.5"/>
+  <line x1="545" y1="683" x2="560" y2="683" stroke="#5E6A87" stroke-width="1" marker-end="url(#arrow-mint)" opacity="0.5"/>
+  <line x1="795" y1="683" x2="810" y2="683" stroke="#5E6A87" stroke-width="1" marker-end="url(#arrow-mint)" opacity="0.5"/>
+  <line x1="1045" y1="683" x2="1060" y2="683" stroke="#5E6A87" stroke-width="1" marker-end="url(#arrow-mint)" opacity="0.5"/>
+
+  <!-- Seed Data -->
+  <rect x="60" y="730" width="380" height="48" rx="8" fill="#0D1321" stroke="#1E2740" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="80" y="750" font-size="10" font-weight="600" fill="#5E6A87">Seed Data</text>
+  <text x="80" y="766" font-size="8" fill="#5E6A87">Auto-seeds demo user "Aarav Mehta" with 6 months of transactions, goals, assets, liabilities, memories</text>
+
+  <!-- ============================================================ -->
+  <!-- DATA LAYER                                                   -->
+  <!-- ============================================================ -->
+
+  <rect x="40" y="822" width="1320" height="64" rx="12" fill="url(#fr-grad)" stroke="#1E2740" stroke-width="1" filter="url(#shadow)"/>
+  <text x="60" y="844" font-size="13" font-weight="600" fill="#E8ECF6">Data Stores</text>
+
+  <!-- SQLite (demo) -->
+  <rect x="60" y="856" width="280" height="40" rx="6" fill="#0D1321" stroke="#27E0A6" stroke-width="1"/>
+  <text x="200" y="872" text-anchor="middle" font-size="10" font-weight="600" fill="#27E0A6">SQLite</text>
+  <text x="200" y="886" text-anchor="middle" font-size="8" fill="#5E6A87">Demo: zero-infra local storage</text>
+
+  <!-- Arrow -->
+  <line x1="340" y1="876" x2="370" y2="876" stroke="#5E6A87" stroke-width="1" marker-end="url(#arrow-mint)" opacity="0.5"/>
+
+  <!-- Docker Compose production stack -->
+  <rect x="375" y="852" width="620" height="48" rx="8" fill="#0D1321" stroke="#F0B860" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="395" y="870" font-size="10" font-weight="600" fill="#F0B860">docker-compose.yml  —  Production Upgrade Path</text>
+
+  <!-- Postgres -->
+  <rect x="395" y="880" width="120" height="28" rx="6" fill="#1E2740"/>
+  <text x="455" y="898" text-anchor="middle" font-size="8" font-weight="600" fill="#27E0A6">PostgreSQL</text>
+  <text x="515" y="898" font-size="9" fill="#5E6A87">|</text>
+
+  <!-- Neo4j -->
+  <rect x="525" y="880" width="110" height="28" rx="6" fill="#1E2740"/>
+  <text x="580" y="898" text-anchor="middle" font-size="8" font-weight="600" fill="#7C5DFC">Neo4j</text>
+  <text x="635" y="898" font-size="9" fill="#5E6A87">|</text>
+
+  <!-- Qdrant -->
+  <rect x="645" y="880" width="110" height="28" rx="6" fill="#1E2740"/>
+  <text x="700" y="898" text-anchor="middle" font-size="8" font-weight="600" fill="#FF6B7A">Qdrant</text>
+
+  <!-- Legend -->
+  <rect x="1080" y="852" width="220" height="48" rx="8" fill="#11172A" stroke="#1E2740" stroke-width="1"/>
+  <text x="1090" y="868" font-size="8" font-weight="600" fill="#5E6A87">Legend</text>
+  <rect x="1090" y="875" width="30" height="2" fill="#27E0A6" opacity="0.7"/>
+  <text x="1125" y="878" font-size="7" fill="#5E6A87">Request flow</text>
+  <rect x="1090" y="886" width="30" height="1" stroke="#F0B860" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="1125" y="889" font-size="7" fill="#5E6A87">Upgrade / optional path</text>
+
+  <!-- ===== DECORATIVE DOTS ===== -->
+  <circle cx="1350" cy="16" r="3" fill="#27E0A6" opacity="0.4"/>
+  <circle cx="1365" cy="16" r="3" fill="#7C5DFC" opacity="0.4"/>
+  <circle cx="1380" cy="16" r="3" fill="#F0B860" opacity="0.4"/>
+</svg>

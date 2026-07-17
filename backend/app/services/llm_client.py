@@ -14,16 +14,13 @@ import json
 import logging
 from typing import Optional
 
-from sentence_transformers import SentenceTransformer
-
-_model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
-EMBEDDING_DIM = 384
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logger = logging.getLogger("finmate.llm")
+
+EMBEDDING_DIM = 384
+_embed_model = None  # lazily loaded — keeps cold starts fast and deps optional
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
@@ -191,7 +188,23 @@ def _call_openai(prompt: str, system_prompt: str = "", temperature: float = 0.7)
     return data["choices"][0]["message"]["content"]
 
 
-# ─── Embeddings (Gemini text-embedding-004) ──────────────────────────────────
+# ─── Embeddings (local MiniLM, lazily loaded) ────────────────────────────────
 
-def get_embedding(text:str):
-    return _model.encode(text).tolist()
+def get_embedding(text: str):
+    """
+    Return a 384-dim embedding, or None if sentence-transformers isn't installed.
+    Loaded lazily so the app boots (and deploys) without the heavy torch stack —
+    when embeddings are unavailable, the memory engine uses keyword search.
+    """
+    global _embed_model
+    if _embed_model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+            _embed_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        except Exception as e:
+            logger.warning("Embeddings unavailable (%s) — using keyword memory search.", e)
+            return None
+    try:
+        return _embed_model.encode(text).tolist()
+    except Exception:
+        return None

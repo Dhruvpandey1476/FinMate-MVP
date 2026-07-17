@@ -4,8 +4,20 @@ FinMate builds a **Financial Digital Twin** for every user, remembers their fina
 history through a three-tier Memory Engine, and runs four specialized agents
 (AI CFO, Scenario Simulator, Goal Planner, Opportunity Discovery) on top of it.
 
-This repo is a fully working MVP: real backend, real frontend, real demo data,
-runs locally in under 5 minutes with zero API keys.
+This repo is a **multi-user, auth-protected product**: real backend, real frontend,
+per-account data isolation, and a live memory engine that learns from each user's
+chats and uploads. Runs locally in minutes.
+
+> **⚠️ Security first:** API keys were previously committed to `backend/.env` and
+> **must be rotated** (Groq, Gemini, OpenAI, Qdrant, Neo4j) before any deployment.
+> `.env` is now git-ignored. See `backend/.env.example`.
+
+## Accounts
+
+- **Sign up** creates a fresh, empty account — upload a statement or click
+  *Load sample data* to explore.
+- **Demo login:** `demo@finmate.ai` / `demo1234` (pre-loaded with 6 months of data).
+- Every request is authenticated with a JWT bearer token; all data is scoped per user.
 
 ## Quick Start
 
@@ -19,8 +31,9 @@ cp .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-The first request auto-seeds a demo user ("Aarav Mehta") with 6 months of realistic
-transactions, 3 goals, assets, liabilities, and starter memories. API docs at
+On startup the app creates the demo account (`demo@finmate.ai` / `demo1234`) with
+6 months of realistic data. Set `JWT_SECRET` in `.env` (generate with
+`python -c "import secrets; print(secrets.token_hex(32))"`). API docs at
 `http://localhost:8000/docs`.
 
 ### 2. Frontend (Next.js)
@@ -34,7 +47,17 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-That's it — no Postgres, no Docker, no API keys required for the demo.
+Set `NEXT_PUBLIC_API_URL` in `frontend/.env.local` to point at your backend
+(defaults to `http://localhost:8000`).
+
+## Deploy (near-zero cost)
+
+- **Backend:** push to GitHub → Render *New → Blueprint* (uses `render.yaml`;
+  provisions a free Postgres + web service, auto-generates `JWT_SECRET`).
+  Set `GROQ_API_KEY` and `EXTRA_ORIGINS` (your Vercel URL) in the dashboard.
+  Railway/Fly work too via `backend/Dockerfile`.
+- **Frontend:** import `frontend/` into Vercel, set `NEXT_PUBLIC_API_URL` to the
+  Render URL. Free tier is enough to validate with early users.
 
 ## What's in the MVP
 

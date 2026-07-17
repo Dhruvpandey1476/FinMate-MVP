@@ -11,7 +11,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, default="Demo User")
-    email = Column(String, unique=True, default="demo@finmate.ai")
+    email = Column(String, unique=True, index=True, default="demo@finmate.ai")
+    hashed_password = Column(String, default="")
     monthly_income = Column(Float, default=0.0)
     risk_profile = Column(String, default="moderate")  # conservative | moderate | aggressive
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -102,6 +103,15 @@ class Memory(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="memories")
+
+
+class Waitlist(Base):
+    __tablename__ = "waitlist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    note = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class ChatMessage(Base):

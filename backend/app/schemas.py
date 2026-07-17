@@ -84,6 +84,31 @@ class FinancialTwinSnapshot(BaseModel):
     top_expense_categories: List[dict]
 
 
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: dict
+
+
+class MagicRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+
+
+class MagicVerify(BaseModel):
+    token: str
+
+
 class ChatRequest(BaseModel):
     message: str
 

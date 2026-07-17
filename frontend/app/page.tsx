@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { TrendingUp, TrendingDown, AlertTriangle, Sparkle } from "lucide-react";
 import { GlassCard, PageHeader } from "@/components/GlassCard";
 import { api, formatINR } from "@/lib/api";
@@ -21,8 +21,68 @@ export default function Dashboard() {
     api.getUser().then(setUser).catch(() => {});
   }, []);
 
+  const [loadingSample, setLoadingSample] = useState(false);
+
+  // Measure chart width from the real DOM (ResponsiveContainer renders blank
+  // inside CSS grid because it can't resolve its own width).
+  const [chartW, setChartW] = useState(0);
+  const roRef = useRef<ResizeObserver | null>(null);
+  const chartRef = useCallback((node: HTMLDivElement | null) => {
+    if (roRef.current) {
+      roRef.current.disconnect();
+      roRef.current = null;
+    }
+    if (node) {
+      const ro = new ResizeObserver((entries) => setChartW(entries[0].contentRect.width));
+      ro.observe(node);
+      roRef.current = ro;
+      setChartW(node.clientWidth);
+    }
+  }, []);
+
+  async function loadSample() {
+    setLoadingSample(true);
+    try {
+      await api.loadSample();
+      window.location.reload();
+    } catch {
+      setLoadingSample(false);
+    }
+  }
+
   if (!snapshot) {
     return <div className="text-mist">Loading your financial twin…</div>;
+  }
+
+  const isEmpty = snapshot.net_worth === 0 && snapshot.total_income_month === 0 && goals.length === 0;
+  if (isEmpty) {
+    return (
+      <div>
+        <PageHeader
+          title={`Welcome${user?.name ? `, ${user.name.split(" ")[0]}` : ""}`}
+          subtitle="Let's build your Financial Twin."
+        />
+        <GlassCard strong className="max-w-xl">
+          <p className="text-white font-medium mb-1">Your twin is empty</p>
+          <p className="text-sm text-mist mb-5">
+            Upload a bank statement to build your real Financial Twin, or explore the
+            product instantly with sample data.
+          </p>
+          <div className="flex gap-3">
+            <a href="/upload" className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-mint to-violet text-ink font-medium text-sm">
+              Upload statement
+            </a>
+            <button
+              onClick={loadSample}
+              disabled={loadingSample}
+              className="px-4 py-2.5 rounded-xl border border-line text-sm text-white hover:bg-white/[0.04] disabled:opacity-60"
+            >
+              {loadingSample ? "Loading…" : "Load sample data"}
+            </button>
+          </div>
+        </GlassCard>
+      </div>
+    );
   }
 
   const score = snapshot.financial_health_score;
@@ -42,32 +102,34 @@ export default function Dashboard() {
           <p className="text-sm text-fog mt-3">Financial Health Score</p>
         </GlassCard>
 
-        <GlassCard className="lg:col-span-2">
+        <GlassCard className="lg:col-span-2 min-w-0">
           <p className="text-sm text-fog mb-4">6-Month Cash Flow</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={series}>
-              <defs>
-                <linearGradient id="income" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#27E0A6" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#27E0A6" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="expense" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#FF6B7A" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#FF6B7A" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="#1E2740" vertical={false} />
-              <XAxis dataKey="month" stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
-                tickFormatter={(v) => formatINR(v, { compact: true })} />
-              <Tooltip
-                contentStyle={{ background: "#11172A", border: "1px solid #1E2740", borderRadius: 12, fontSize: 12 }}
-                formatter={(v: number) => formatINR(v)}
-              />
-              <Area type="monotone" dataKey="income" stroke="#27E0A6" fill="url(#income)" strokeWidth={2} />
-              <Area type="monotone" dataKey="expense" stroke="#FF6B7A" fill="url(#expense)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div ref={chartRef} className="w-full h-[180px]">
+            {chartW > 0 && (
+              <AreaChart width={chartW} height={180} data={series}>
+                <defs>
+                  <linearGradient id="income" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#27E0A6" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#27E0A6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="expense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#FF6B7A" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#FF6B7A" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="#1E2740" vertical={false} />
+                <XAxis dataKey="month" stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
+                  tickFormatter={(v) => formatINR(v, { compact: true })} />
+                <Tooltip
+                  contentStyle={{ background: "#11172A", border: "1px solid #1E2740", borderRadius: 12, fontSize: 12 }}
+                  formatter={(v: number) => formatINR(v)}
+                />
+                <Area type="monotone" dataKey="income" stroke="#27E0A6" fill="url(#income)" strokeWidth={2} />
+                <Area type="monotone" dataKey="expense" stroke="#FF6B7A" fill="url(#expense)" strokeWidth={2} />
+              </AreaChart>
+            )}
+          </div>
         </GlassCard>
       </div>
 

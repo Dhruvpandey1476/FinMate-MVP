@@ -15,8 +15,8 @@ logging.basicConfig(
 logger = logging.getLogger("finmate")
 
 from .database import Base, engine, get_service_status
-from . import seed_data
-from .routers import twin, chat, goals, simulate, insights, memory, profile, upload
+from . import seed_data, models
+from .routers import twin, chat, goals, simulate, insights, memory, profile, upload, waitlist, auth as auth_router
 from .services.memory_engine import ensure_collection, reindex_all
 from .services.wealth_graph import sync_graph
 
@@ -32,6 +32,11 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
 ]
+# Allow a comma-separated list of extra origins in production (e.g. your Vercel URL).
+extra = os.getenv("EXTRA_ORIGINS", "")
+if extra:
+    origins += [o.strip() for o in extra.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -40,6 +45,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router.router)
+app.include_router(waitlist.router)
 app.include_router(twin.router)
 app.include_router(chat.router)
 app.include_router(goals.router)
@@ -68,12 +75,14 @@ def on_startup():
         finally:
             db.close()
 
-    # Sync Neo4j wealth graph
+    # Sync Neo4j wealth graph for the demo account (if graph DB is available)
     try:
         from .database import SessionLocal
         db = SessionLocal()
         try:
-            sync_graph(db, user_id=1)
+            demo = db.query(models.User).filter(models.User.email == seed_data.DEMO_EMAIL).first()
+            if demo:
+                sync_graph(db, demo.id)
         finally:
             db.close()
     except Exception as e:
