@@ -104,5 +104,4 @@ if OPENAI_API_KEY:
 
     except Exception as e:
         print("OpenAI Error:", e)
-
 print("=" * 50)
