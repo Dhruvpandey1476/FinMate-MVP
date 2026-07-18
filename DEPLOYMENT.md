@@ -113,5 +113,5 @@ so the whole MVP works with zero auth setup. To add real multi-user support:
 3. Replace `DEMO_USER_ID = 1` in each router file with the authenticated
    user's ID, resolved via a FastAPI dependency.
 
-This is intentionally the last step — get the product demo-ready first, add
+This is intentionally the last step — get the product demo ready first, add
 auth once you're confident in the core experience.
