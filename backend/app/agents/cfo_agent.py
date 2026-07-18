@@ -9,7 +9,7 @@ Each node:
 1. Gathers structured context from its domain
 2. Adds it to the shared state
 3. The final AI Synthesis node sends ALL context to the LLM for a genuine,
-   contextual response — not a template string.
+   contextual response, not a template string.
 """
 import logging
 from typing import TypedDict, Optional
