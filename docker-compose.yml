@@ -43,7 +43,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
 volumes:
   finmate_pg_data:
   finmate_neo4j_data:
