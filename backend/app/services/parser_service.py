@@ -55,17 +55,24 @@ def parse_csv(file_content: bytes, filename: str = "") -> list[dict]:
         df.columns = [str(c).strip().lower() for c in df.columns]
         
         # Auto-detect column mapping
-        date_col = _find_column(df.columns, DATE_PATTERNS)
-        desc_col = _find_column(df.columns, DESC_PATTERNS)
-        
-        # Check for separate debit/credit columns vs single amount
-        debit_col = _find_column(df.columns, DEBIT_PATTERNS)
-        credit_col = _find_column(df.columns, CREDIT_PATTERNS)
-        amount_col = _find_column(df.columns, AMOUNT_PATTERNS)
-        
+        cols = list(df.columns)
+        date_col = _find_column(cols, DATE_PATTERNS)
+        desc_col = _find_column(cols, DESC_PATTERNS)
+
+        # Single amount column (PhonePe/UPI style: one "Amount" + a type column)
+        amount_col = _find_column(cols, ["amount", "txn amount", "transaction amount"])
+        # DEBIT/CREDIT indicator column (sign), e.g. "Transaction Type"
+        type_col = next((c for c in cols if "type" in c and "amount" not in c and "id" not in c), None)
+        # Separate NUMERIC debit/credit columns — exclude text columns like
+        # "Credit/debit instrument" and the type column.
+        debit_col = next((c for c in cols if ("withdrawal" in c or "debit" in c)
+                          and "instrument" not in c and "type" not in c), None)
+        credit_col = next((c for c in cols if ("deposit" in c or "credit" in c)
+                           and "instrument" not in c and "type" not in c), None)
+
         if not date_col:
             raise ValueError("Could not identify date column in CSV")
-        
+
         transactions = []
         for _, row in df.iterrows():
             try:
@@ -73,20 +80,23 @@ def parse_csv(file_content: bytes, filename: str = "") -> list[dict]:
                 date = _parse_date(str(row[date_col]))
                 if not date:
                     continue
-                
-                # Parse amount
-                if debit_col and credit_col:
-                    debit = _parse_amount(row.get(debit_col, 0))
-                    credit = _parse_amount(row.get(credit_col, 0))
-                    amount = credit - debit if credit > 0 else -debit
-                elif amount_col:
-                    amount = _parse_amount(row[amount_col])
-                else:
+
+                # Parse amount + sign
+                amount = None
+                if amount_col:
+                    mag = _parse_amount(row.get(amount_col))
+                    if mag != 0:
+                        amount = _row_sign(row, type_col, desc_col) * abs(mag)
+                if amount is None and (debit_col or credit_col):
+                    debit = _parse_amount(row.get(debit_col, 0)) if debit_col else 0
+                    credit = _parse_amount(row.get(credit_col, 0)) if credit_col else 0
+                    if credit > 0:
+                        amount = credit
+                    elif debit > 0:
+                        amount = -debit
+                if not amount:
                     continue
-                
-                if amount == 0:
-                    continue
-                
+
                 # Parse description
                 description = str(row.get(desc_col, "")) if desc_col else ""
                 merchant = _extract_merchant(description)
@@ -115,6 +125,19 @@ def parse_csv(file_content: bytes, filename: str = "") -> list[dict]:
     except Exception as e:
         logger.error("CSV parsing failed: %s", e)
         raise ValueError(f"Failed to parse CSV: {str(e)}")
+
+
+def _row_sign(row, type_col, desc_col) -> int:
+    """+1 for income, -1 for expense, from the type/description columns."""
+    text = ""
+    if type_col:
+        text += " " + str(row.get(type_col, "")).lower()
+    if desc_col:
+        text += " " + str(row.get(desc_col, "")).lower()
+    if any(w in text for w in
+           ["credit", "received", "refund", "cashback", "deposit", "added", "money received"]):
+        return 1
+    return -1
 
 
 def _read_transactions_frame(text: str):
