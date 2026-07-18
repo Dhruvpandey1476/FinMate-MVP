@@ -9,7 +9,7 @@ type Mode = "magic" | "password" | "signup";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("magic");
+  const [mode, setMode] = useState<Mode>("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -125,14 +125,19 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-5 space-y-2 text-sm">
-            {mode !== "magic" && (
-              <button onClick={() => setMode("magic")} className="block text-mist hover:text-white">
-                ← Use a magic email link instead
+            {mode === "signup" && (
+              <button onClick={() => setMode("password")} className="block text-mist hover:text-white">
+                Already have an account? Log in
+              </button>
+            )}
+            {mode === "password" && (
+              <button onClick={() => setMode("signup")} className="block text-mist hover:text-white">
+                Need an account? Sign up
               </button>
             )}
             {mode === "magic" && (
-              <button onClick={() => setMode("password")} className="block text-mist hover:text-white">
-                Log in with a password
+              <button onClick={() => setMode("signup")} className="block text-mist hover:text-white">
+                ← Back to sign up
               </button>
             )}
             <button onClick={useDemo} className="block text-mint hover:underline">
