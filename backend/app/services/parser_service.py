@@ -358,19 +358,28 @@ def _find_column(columns, patterns) -> Optional[str]:
 
 
 def _parse_date(date_str: str) -> Optional[datetime]:
-    """Try multiple date formats common in Indian bank statements."""
-    date_str = date_str.strip()
+    """Try multiple date formats common in Indian bank/UPI statements."""
     formats = [
         "%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%y", "%d-%m-%y",
         "%d %b %Y", "%d-%b-%Y", "%d %B %Y", "%Y-%m-%dT%H:%M:%S",
         "%m/%d/%Y", "%d/%m/%Y %H:%M:%S",
-        "%b %d %Y", "%B %d %Y", "%d %b, %Y", "%d %B, %Y",
+        "%b %d %Y", "%B %d %Y",
     ]
-    for fmt in formats:
-        try:
-            return datetime.strptime(date_str, fmt)
-        except ValueError:
-            continue
+    # Normalize: drop commas, collapse whitespace, keep only the date part
+    # (statements often append a time like "Jul 05, 2025 10:31 AM").
+    raw = str(date_str).strip()
+    normalized = re.sub(r"\s+", " ", raw.replace(",", "")).strip()
+    candidates = [raw, normalized]
+    # Also try just the first 3 tokens (date without trailing time)
+    parts = normalized.split(" ")
+    if len(parts) > 3:
+        candidates.append(" ".join(parts[:3]))
+    for cand in candidates:
+        for fmt in formats:
+            try:
+                return datetime.strptime(cand, fmt)
+            except ValueError:
+                continue
     return None
 
 
