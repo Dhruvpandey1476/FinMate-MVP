@@ -34,19 +34,23 @@ def parse_csv(file_content: bytes, filename: str = "") -> list[dict]:
     {date, amount, category, type, merchant, note}
     """
     try:
-        # Try different encodings
-        for encoding in ["utf-8", "latin-1", "cp1252"]:
+        # Decode with a tolerant set of encodings
+        text = None
+        for encoding in ["utf-8-sig", "utf-8", "latin-1", "cp1252"]:
             try:
-                df = pd.read_csv(io.BytesIO(file_content), encoding=encoding)
+                text = file_content.decode(encoding)
                 break
             except UnicodeDecodeError:
                 continue
-        else:
+        if text is None:
             raise ValueError("Could not decode CSV with any supported encoding")
-        
-        if df.empty:
+
+        # Bank statements often have preamble/summary rows above the real table
+        # and ragged columns — locate the header row and skip bad lines.
+        df = _read_transactions_frame(text)
+        if df is None or df.empty:
             return []
-        
+
         # Normalize column names
         df.columns = [str(c).strip().lower() for c in df.columns]
         
@@ -113,6 +117,33 @@ def parse_csv(file_content: bytes, filename: str = "") -> list[dict]:
         raise ValueError(f"Failed to parse CSV: {str(e)}")
 
 
+def _read_transactions_frame(text: str):
+    """Locate the header row (skipping bank preamble) and parse tolerantly."""
+    lines = text.splitlines()
+    value_patterns = AMOUNT_PATTERNS + DEBIT_PATTERNS + CREDIT_PATTERNS + DESC_PATTERNS
+    header_idx = 0
+    for i, line in enumerate(lines[:50]):
+        low = line.lower()
+        if any(p in low for p in DATE_PATTERNS) and any(p in low for p in value_patterns):
+            header_idx = i
+            break
+
+    for sep in [",", ";", "\t", "|"]:
+        try:
+            df = pd.read_csv(
+                io.StringIO(text),
+                skiprows=header_idx,
+                sep=sep,
+                engine="python",
+                on_bad_lines="skip",
+            )
+            if df.shape[1] >= 2:
+                return df
+        except Exception:
+            continue
+    return None
+
+
 def parse_pdf(file_content: bytes, filename: str = "") -> list[dict]:
     """Parse bank statement PDF using pdfplumber."""
     try:
@@ -172,17 +203,68 @@ def parse_pdf(file_content: bytes, filename: str = "") -> list[dict]:
                         except Exception:
                             continue
         
+        # Many statements (e.g. PhonePe/GPay) are text lists, not tables.
+        if not transactions:
+            transactions = _parse_pdf_text(io.BytesIO(file_content))
+
         if transactions:
             transactions = categorize_transactions(transactions)
-        
+
         logger.info("Parsed %d transactions from PDF '%s'", len(transactions), filename)
         return transactions
-        
+
     except ImportError:
         raise ValueError("PDF parsing requires pdfplumber. Install with: pip install pdfplumber")
     except Exception as e:
         logger.error("PDF parsing failed: %s", e)
         raise ValueError(f"Failed to parse PDF: {str(e)}")
+
+
+_PDF_DATE_RE = re.compile(
+    r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}'
+    r'|\d{4}-\d{2}-\d{2}'
+    r'|[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}'
+    r'|\d{1,2}\s+[A-Za-z]{3,9},?\s+\d{4})'
+)
+_PDF_AMT_RE = re.compile(r'(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)', re.I)
+
+
+def _parse_pdf_text(fp) -> list[dict]:
+    """Fallback for text-list PDFs (PhonePe/GPay). Tracks the current date and
+    emits a transaction whenever a ₹ amount appears on/under it."""
+    import pdfplumber
+    lines = []
+    with pdfplumber.open(fp) as pdf:
+        for page in pdf.pages:
+            lines.extend((page.extract_text() or "").split("\n"))
+
+    txns = []
+    current_date = None
+    for line in lines:
+        dm = _PDF_DATE_RE.search(line)
+        if dm:
+            d = _parse_date(dm.group(1).replace(",", ""))
+            if d:
+                current_date = d
+        am = _PDF_AMT_RE.search(line)
+        if am and current_date:
+            amount = _parse_amount(am.group(1))
+            if amount == 0:
+                continue
+            low = line.lower()
+            is_income = any(w in low for w in
+                            ["credit", "received", "refund", "cashback", "deposit", "added", "money received"])
+            desc = line.strip()[:150]
+            txns.append({
+                "date": current_date.isoformat(),
+                "amount": round(amount if is_income else -amount, 2),
+                "type": "income" if is_income else "expense",
+                "merchant": _extract_merchant(desc),
+                "note": desc,
+                "category": "Uncategorized",
+                "is_recurring": False,
+            })
+    return txns
 
 
 def categorize_transactions(transactions: list[dict]) -> list[dict]:
@@ -282,6 +364,7 @@ def _parse_date(date_str: str) -> Optional[datetime]:
         "%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%y", "%d-%m-%y",
         "%d %b %Y", "%d-%b-%Y", "%d %B %Y", "%Y-%m-%dT%H:%M:%S",
         "%m/%d/%Y", "%d/%m/%Y %H:%M:%S",
+        "%b %d %Y", "%B %d %Y", "%d %b, %Y", "%d %B, %Y",
     ]
     for fmt in formats:
         try:
