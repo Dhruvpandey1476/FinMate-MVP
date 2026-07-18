@@ -16,6 +16,10 @@ logger = logging.getLogger("finmate.database")
 
 # ─── PostgreSQL ──────────────────────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./finmate.db")
+# SQLAlchemy 2.0 requires the "postgresql://" scheme; Render/Heroku sometimes
+# hand out "postgres://". Normalize it so the app connects instead of crashing.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
