@@ -226,14 +226,22 @@ def parse_pdf(file_content: bytes, filename: str = "") -> list[dict]:
                         except Exception:
                             continue
         
-        # Many statements (e.g. PhonePe/GPay) are text lists, not tables.
-        if not transactions:
+        # Many statements (e.g. PhonePe) are text lists, not tables.
+        if len(transactions) < 2:
             transactions = _parse_pdf_text(io.BytesIO(file_content))
 
-        if transactions:
+        # Universal fallback for hard/jumbled layouts (GPay, Paytm, unknown banks).
+        used_llm = False
+        if len(transactions) < 2:
+            transactions = _parse_pdf_llm(io.BytesIO(file_content))
+            used_llm = True
+
+        # LLM parser already categorizes; only categorize the deterministic paths.
+        if transactions and not used_llm:
             transactions = categorize_transactions(transactions)
 
-        logger.info("Parsed %d transactions from PDF '%s'", len(transactions), filename)
+        logger.info("Parsed %d transactions from PDF '%s'%s",
+                    len(transactions), filename, " (LLM)" if used_llm else "")
         return transactions
 
     except ImportError:
@@ -288,6 +296,76 @@ def _parse_pdf_text(fp) -> list[dict]:
                 "is_recurring": False,
             })
     return txns
+
+
+CATEGORIES_LIST = [
+    "Salary", "Freelance", "Investment Returns", "Other Income",
+    "Rent", "Groceries", "Food Delivery", "Transport", "Utilities",
+    "Entertainment", "Shopping", "Subscriptions", "Health",
+    "Education", "Insurance", "EMI/Loan", "Transfer", "Other",
+]
+
+
+def _parse_pdf_llm(fp) -> list[dict]:
+    """
+    Universal fallback: hand the raw (even jumbled) statement text to the LLM
+    and let it reconstruct transactions. Handles GPay/Paytm and unknown banks
+    whose layouts defeat table/regex extraction.
+    """
+    import pdfplumber
+    pages = []
+    with pdfplumber.open(fp) as pdf:
+        for p in pdf.pages:
+            pages.append(p.extract_text() or "")
+    text = "\n".join(pages).strip()
+    if not text:
+        return []
+
+    all_txns = []
+    # Chunk long statements so we never overflow the model context.
+    chunk_size = 10000
+    chunks = [text[i:i + chunk_size] for i in range(0, min(len(text), 60000), chunk_size)] or [text]
+    for chunk in chunks:
+        prompt = f"""You are a UPI/bank statement parser. Extract EVERY real transaction from the statement text below. The text may be JUMBLED or have interleaved/merged characters from PDF extraction — reconstruct it as best you can.
+
+STATEMENT TEXT:
+{chunk}
+
+Return ONLY JSON of this exact shape:
+{{"transactions":[{{"date":"YYYY-MM-DD","amount":<number>,"description":"short text","category":"<one category>"}}]}}
+
+RULES:
+- amount is NEGATIVE for money paid/sent/debited, POSITIVE for money received/credited.
+- Infer any missing year from the statement's date range.
+- category must be one of: {', '.join(CATEGORIES_LIST)}.
+- Ignore summary/total/note/header lines — only real transactions.
+- If you find none, return {{"transactions":[]}}."""
+        data = llm_client.generate_json(prompt=prompt, fallback={"transactions": []})
+        rows = data.get("transactions") if isinstance(data, dict) else None
+        for t in rows or []:
+            d = _parse_date(str(t.get("date", "")))
+            amt = t.get("amount")
+            if not d or amt in (None, "", 0):
+                continue
+            try:
+                amt = float(amt)
+            except (TypeError, ValueError):
+                continue
+            if amt == 0:
+                continue
+            desc = str(t.get("description") or "")[:150]
+            cat = t.get("category") or "Other"
+            all_txns.append({
+                "date": d.isoformat(),
+                "amount": round(amt, 2),
+                "type": "income" if amt > 0 else "expense",
+                "merchant": _extract_merchant(desc),
+                "note": desc,
+                "category": cat if cat in CATEGORIES_LIST else "Other",
+                "is_recurring": False,
+            })
+    logger.info("LLM parser extracted %d transactions", len(all_txns))
+    return all_txns
 
 
 def categorize_transactions(transactions: list[dict]) -> list[dict]:
