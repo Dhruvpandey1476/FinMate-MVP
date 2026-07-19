@@ -88,6 +88,7 @@ export const api = {
   getLiabilities: () => request("/api/profile/liabilities"),
   getUser: () => request("/api/profile/user"),
   loadSample: () => request("/api/profile/load-sample", { method: "POST" }),
+  onboard: (data: any) => request("/api/profile/onboard", { method: "POST", body: JSON.stringify(data) }),
 
   // Goals
   getGoals: () => request("/api/goals/"),

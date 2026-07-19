@@ -63,13 +63,16 @@ export default function Dashboard() {
           subtitle="Let's build your Financial Twin."
         />
         <GlassCard strong className="max-w-xl">
-          <p className="text-white font-medium mb-1">Your twin is empty</p>
+          <p className="text-white font-medium mb-1">Let's build your Financial Twin</p>
           <p className="text-sm text-mist mb-5">
-            Upload a bank statement to build your real Financial Twin, or explore the
-            product instantly with sample data.
+            No bank statement needed — a 30-second setup gives your AI CFO enough to
+            start. Or upload a statement for full precision, or explore with sample data.
           </p>
-          <div className="flex gap-3">
-            <a href="/upload" className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-mint to-violet text-ink font-medium text-sm">
+          <div className="flex flex-wrap gap-3">
+            <a href="/onboarding" className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-mint to-violet text-ink font-medium text-sm">
+              Quick setup (30s)
+            </a>
+            <a href="/upload" className="px-4 py-2.5 rounded-xl border border-line text-sm text-white hover:bg-white/[0.04]">
               Upload statement
             </a>
             <button
