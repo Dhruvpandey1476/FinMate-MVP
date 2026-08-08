@@ -70,7 +70,7 @@ Set `NEXT_PUBLIC_API_URL` in `frontend/.env.local` to point at your backend
 | Goal Planning Agent | ✅ Real | Timelines, milestones, monthly contribution recommendations |
 | Opportunity Discovery | ✅ Real | Detects recurring subscriptions, spending leaks, unusual transactions |
 | 8 frontend pages | ✅ Real | Dashboard, Financial Twin, AI CFO Chat, Goals, Simulations, Insights, Memory Timeline, Settings |
-| LLM-backed reasoning | ⚙️ Optional | Off by default (deterministic rule engine). Flip on with a Gemini/OpenAI key — see Settings page |
+| LLM-backed reasoning | ⚙️ Optional | Groq/Gemini/OpenAI key — see Settings page |
 | PostgreSQL / Neo4j / Qdrant | ⚙️ Upgrade path | Demo uses SQLite + in-process retrieval so it runs anywhere with no infra. `docker-compose.yml` spins up the production stack when you're ready — see `DEPLOYMENT.md` |
 
 **Why SQLite instead of Postgres/Neo4j/Qdrant for the demo:** those three require
