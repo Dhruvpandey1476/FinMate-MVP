@@ -11,7 +11,11 @@ from app.database import DATABASE_URL, Base  # noqa: E402
 from app import models  # noqa: F401,E402  - registers all tables on Base.metadata
 
 config = context.config
-config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
+
+# Default to the app's database, but never clobber a URL the caller set
+# explicitly - that override is how migrations get pointed at another database.
+if not (config.get_main_option("sqlalchemy.url") or "").strip():
+    config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -33,9 +37,21 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    from app.database import engine
+    from sqlalchemy import create_engine, pool
 
-    with engine.connect() as connection:
+    from app.database import engine as app_engine
+
+    # Reuse the app's pooled engine when migrating the app's own database, but
+    # honour an explicitly configured URL so migrations can be run against
+    # another database (a test fixture, or `alembic upgrade` pointed at a
+    # staging copy) instead of silently hitting the app's.
+    configured = config.get_main_option("sqlalchemy.url")
+    if configured and configured != DATABASE_URL:
+        connectable = create_engine(configured, poolclass=pool.NullPool)
+    else:
+        connectable = app_engine
+
+    with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
