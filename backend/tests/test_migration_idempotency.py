@@ -39,6 +39,15 @@ def _run_migrations(db_url: str, target: str = "head"):
             os.environ["DATABASE_URL"] = previous
 
 
+
+def _head_revision() -> str:
+    """Read head from the migration scripts, so adding one doesn't break tests."""
+    from alembic.script import ScriptDirectory
+    from app.database_migrations import _alembic_config
+
+    return ScriptDirectory.from_config(_alembic_config()).get_current_head()
+
+
 def _columns(engine, table):
     return {c["name"] for c in inspect(engine).get_columns(table)}
 
@@ -141,7 +150,7 @@ class TestEnsureSchemaPaths:
         return database_migrations.ensure_schema()
 
     def test_empty_database_migrates_from_scratch(self, db_url, monkeypatch):
-        assert self._ensure(db_url, monkeypatch) == "0002_metering"
+        assert self._ensure(db_url, monkeypatch) == _head_revision()
         assert "plan" in _columns(create_engine(db_url), "users")
 
     def test_legacy_database_is_upgraded_not_skipped(self, db_url, monkeypatch):
@@ -156,7 +165,7 @@ class TestEnsureSchemaPaths:
             conn.execute(text("DROP TABLE alembic_version"))
         engine.dispose()
 
-        assert self._ensure(db_url, monkeypatch) == "0002_metering"
+        assert self._ensure(db_url, monkeypatch) == _head_revision()
 
         engine = create_engine(db_url)
         assert "plan" in _columns(engine, "users"), "legacy schema was skipped, not migrated"
@@ -172,5 +181,5 @@ class TestEnsureSchemaPaths:
         Base.metadata.create_all(bind=engine)
         engine.dispose()
 
-        assert self._ensure(db_url, monkeypatch) == "0002_metering"
+        assert self._ensure(db_url, monkeypatch) == _head_revision()
         assert "plan" in _columns(create_engine(db_url), "users")

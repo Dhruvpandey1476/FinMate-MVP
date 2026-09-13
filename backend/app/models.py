@@ -219,3 +219,25 @@ class AnalyticsEvent(Base):
     name = Column(String, index=True)  # signup | onboard_complete | upload_success | first_chat | ...
     props = Column(Text, default="{}")  # JSON
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BalanceCheckpoint(Base):
+    """
+    A user-confirmed account balance at a point in time.
+
+    Safe-to-Spend needs a trustworthy starting balance. Without Account
+    Aggregator there is no live feed, so the user periodically confirms what
+    their account actually says and the ledger accrues from there. Storing the
+    checkpoint (rather than inferring a balance from transactions alone) is what
+    lets the UI honestly label the figure "as of your last update".
+    """
+    __tablename__ = "balance_checkpoints"
+    __table_args__ = (Index("ix_checkpoint_user_date", "user_id", "as_of"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    balance = Column(Float, nullable=False)
+    as_of = Column(DateTime, default=datetime.utcnow, index=True)
+    note = Column(String, nullable=True)
+    source = Column(String, default="user")  # user | onboarding | import
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -39,9 +39,14 @@ def simulate(db: Session, user_id: int, scenario_type: str, amount=None,
              inflation=None, monte_carlo: bool = False, volatility=None,
              liability_id=None, user=None) -> dict:
     snapshot = financial_twin.get_snapshot(db, user_id)
-    income = snapshot["total_income_month"]
-    expense = snapshot["total_expense_month"]
     net_worth = snapshot["net_worth"]
+
+    # Project from a normalised run rate, not the partial current month. On the
+    # 13th the current month holds 13 days of data; on the 1st it holds none,
+    # which would project a flat line from a perfectly healthy account.
+    run_rate = financial_twin.monthly_run_rate(db, user_id)
+    income = run_rate["income"]
+    expense = run_rate["expense"]
 
     annual_return = DEFAULT_ANNUAL_RETURN if annual_return is None else float(annual_return)
     inflation = DEFAULT_INFLATION if inflation is None else float(inflation)
@@ -75,6 +80,9 @@ def simulate(db: Session, user_id: int, scenario_type: str, amount=None,
         return result
 
     result["assumptions"] = {
+        "run_rate_basis": run_rate["basis"],
+        "monthly_income_used": income,
+        "monthly_expense_used": expense,
         "annual_return": annual_return,
         "inflation": inflation,
         "volatility": volatility if monte_carlo else None,

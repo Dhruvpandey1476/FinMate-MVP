@@ -149,13 +149,49 @@ def seed_for_user(db: Session, user: models.User):
     logger.info("Seeded sample data for user %d", user.id)
 
 
+# Demo data is anchored to the month it was generated in. Once the newest
+# transaction is older than this, the demo account's "current month" is empty
+# and every live figure - cash flow, savings rate, Safe-to-Spend - reads zero.
+DEMO_STALE_DAYS = 35
+
+
+def _demo_is_stale(db: Session, user: models.User) -> bool:
+    newest = (
+        db.query(models.Transaction.date)
+        .filter(models.Transaction.user_id == user.id)
+        .order_by(models.Transaction.date.desc())
+        .first()
+    )
+    if not newest:
+        return True
+    return (datetime.utcnow() - newest[0]).days > DEMO_STALE_DAYS
+
+
+def _reset_demo(db: Session, user: models.User) -> None:
+    """Clear generated demo rows so seed_for_user can re-anchor them to today."""
+    for model in (models.Transaction, models.Goal, models.Asset,
+                  models.Liability, models.Memory):
+        db.query(model).filter(model.user_id == user.id).delete(synchronize_session=False)
+    for model in (models.InsightCache, models.Notification, models.BalanceCheckpoint):
+        db.query(model).filter(model.user_id == user.id).delete(synchronize_session=False)
+    db.commit()
+
+
 def seed():
     """Ensure the demo account exists and is populated (runs on startup)."""
     Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
     try:
-        if db.query(models.User).filter(models.User.email == DEMO_EMAIL).first():
-            return  # already seeded
+        existing = db.query(models.User).filter(models.User.email == DEMO_EMAIL).first()
+        if existing:
+            # Re-anchor rather than skip: a demo seeded two months ago shows an
+            # empty dashboard, which is the worst possible first impression.
+            if _demo_is_stale(db, existing):
+                logger.info("Demo data is stale - regenerating against today's date.")
+                _reset_demo(db, existing)
+                seed_for_user(db, existing)
+                db.commit()
+            return
 
         demo = models.User(
             name="Aarav Mehta", email=DEMO_EMAIL,

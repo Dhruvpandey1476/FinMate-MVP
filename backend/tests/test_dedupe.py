@@ -188,8 +188,10 @@ def test_backfill_populates_legacy_rows(db, user):
     ])
     db.commit()
 
-    updated = dedupe.backfill_hashes(db)
-    assert updated == 2
+    # backfill_hashes works across all users, so assert on this user's rows
+    # rather than a global count that other tests can move.
+    assert dedupe.backfill_hashes(db) >= 2
 
     rows = db.query(models.Transaction).filter(models.Transaction.user_id == user.id).all()
+    assert len(rows) == 2
     assert all(r.dedupe_hash for r in rows)

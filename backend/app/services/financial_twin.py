@@ -231,3 +231,68 @@ def transactions_fingerprint(db: Session, user_id: int) -> str:
         .one()
     )
     return f"{count}:{max_id}:{round(float(total or 0), 2)}"
+
+
+def monthly_run_rate(db: Session, user_id: int, months: int = 3) -> dict:
+    """
+    Normalised monthly income and expense from recent *complete* months.
+
+    Projections must not be built from the current month. On the 13th it holds
+    13 days of data, so a 12-month forecast drawn from it understates income by
+    more than half - and on the 1st it is empty, which projects a flat line.
+
+    Falls back to the current month only when there is no completed history.
+    """
+    now = datetime.utcnow()
+    this_month_start = _month_start(now)
+    window_start = _add_months(this_month_start, -months)
+
+    income_expr = func.coalesce(
+        func.sum(case((models.Transaction.amount > 0, models.Transaction.amount), else_=0.0)), 0.0
+    )
+    expense_expr = func.coalesce(
+        func.sum(case((models.Transaction.amount < 0, -models.Transaction.amount), else_=0.0)), 0.0
+    )
+
+    income, expense = (
+        db.query(income_expr, expense_expr)
+        .filter(
+            models.Transaction.user_id == user_id,
+            models.Transaction.date >= window_start,
+            models.Transaction.date < this_month_start,
+        )
+        .one()
+    )
+
+    # How many of those months actually contain data, so a user with two months
+    # of history is not averaged across three.
+    distinct_months = (
+        db.query(func.count(func.distinct(
+            func.strftime("%Y-%m", models.Transaction.date)
+            if db.bind.dialect.name == "sqlite"
+            else func.to_char(models.Transaction.date, "YYYY-MM")
+        )))
+        .filter(
+            models.Transaction.user_id == user_id,
+            models.Transaction.date >= window_start,
+            models.Transaction.date < this_month_start,
+        )
+        .scalar()
+        or 0
+    )
+
+    if distinct_months > 0:
+        return {
+            "income": round(float(income) / distinct_months, 2),
+            "expense": round(float(expense) / distinct_months, 2),
+            "basis": f"average of the last {distinct_months} month(s)",
+            "months_used": int(distinct_months),
+        }
+
+    snapshot = get_snapshot(db, user_id)
+    return {
+        "income": snapshot["total_income_month"],
+        "expense": snapshot["total_expense_month"],
+        "basis": "current month so far (no completed months yet)",
+        "months_used": 0,
+    }
