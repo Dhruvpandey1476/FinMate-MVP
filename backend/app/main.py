@@ -42,10 +42,28 @@ async def lifespan(app: FastAPI):
     try:
         ensure_schema()
     except Exception as e:
-        logger.error("Migration failed: %s", e, exc_info=True)
-        if ENV == "production":
-            raise  # never serve traffic against an unknown schema in production
-        logger.warning("Falling back to create_all() for local development.")
+        # Falling back to create_all() here used to hide a failed migration:
+        # it creates missing *tables* but never adds a column to an existing
+        # one, so the app booted against a half-old schema and died later on a
+        # confusing "column does not exist". Only an empty database is safe to
+        # bootstrap this way; anything else must fail loudly.
+        from sqlalchemy import inspect as _inspect
+
+        try:
+            existing = set(_inspect(engine).get_table_names()) - {"alembic_version"}
+        except Exception:
+            existing = {"unknown"}
+
+        if existing:
+            logger.error("Migration failed against a populated database: %s", e, exc_info=True)
+            raise RuntimeError(
+                "Database migration failed and the schema is already populated. "
+                "Refusing to start with a possibly-stale schema. "
+                "Check that alembic.ini and alembic/ are present in the image "
+                "(see backend/Dockerfile) and that DATABASE_URL is correct."
+            ) from e
+
+        logger.warning("Migration unavailable on an empty database (%s) - bootstrapping with create_all().", e)
         models.Base.metadata.create_all(bind=engine)
 
     try:

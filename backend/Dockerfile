@@ -6,6 +6,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Migrations must ship with the image. Without alembic.ini and alembic/, the
+# app cannot upgrade the schema and a deploy fails on the first new column.
+COPY alembic.ini .
+COPY alembic ./alembic
 COPY app ./app
 
 ENV PYTHONUNBUFFERED=1
