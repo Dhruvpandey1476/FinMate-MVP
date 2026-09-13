@@ -76,12 +76,12 @@ export default function ForecastPage() {
 
   return (
     <ErrorBoundary>
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-1">
         <PageHeader
           title="Cash-Flow Forecast"
           subtitle="Where your balance goes next — from your detected bills and spending pace."
         />
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0 -mt-2 sm:mt-1">
           {HORIZONS.map((h) => (
             <button
               key={h}
@@ -101,7 +101,7 @@ export default function ForecastPage() {
       {/* Headline: the answer to "when do I run out?" */}
       <GlassCard
         strong
-        className={`mb-5 border ${atRisk ? "border-rose/30" : "border-mint/20"}`}
+        className={`mb-5 edge-accent ${atRisk ? "border border-rose/30" : ""}`}
       >
         <div className="flex items-start gap-3">
           {atRisk ? (
@@ -120,23 +120,23 @@ export default function ForecastPage() {
         </div>
       </GlassCard>
 
-      <div className="grid gap-4 md:grid-cols-4 mb-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 mb-5">
         <GlassCard>
           <p className="text-xs text-mist mb-1">Opening balance</p>
-          <p className="ledger text-xl text-white">{formatINR(forecast.opening_balance)}</p>
+          <p className="ledger text-lg sm:text-xl text-white truncate">{formatINR(forecast.opening_balance)}</p>
         </GlassCard>
         <GlassCard>
           <p className="text-xs text-mist mb-1">Committed bills / mo</p>
-          <p className="ledger text-xl text-rose">{formatINR(forecast.monthly_committed)}</p>
+          <p className="ledger text-lg sm:text-xl text-rose truncate">{formatINR(forecast.monthly_committed)}</p>
         </GlassCard>
         <GlassCard>
           <p className="text-xs text-mist mb-1">Recurring income / mo</p>
-          <p className="ledger text-xl text-mint">{formatINR(forecast.monthly_recurring_income)}</p>
+          <p className="ledger text-lg sm:text-xl text-mint truncate">{formatINR(forecast.monthly_recurring_income)}</p>
         </GlassCard>
         <GlassCard>
           <p className="text-xs text-mist mb-1">Projected surplus / mo</p>
           <p
-            className={`ledger text-xl ${
+            className={`ledger text-lg sm:text-xl truncate ${
               forecast.projected_monthly_surplus >= 0 ? "text-mint" : "text-rose"
             }`}
           >
@@ -147,10 +147,10 @@ export default function ForecastPage() {
 
       <GlassCard className="mb-5">
         <p className="text-sm text-white font-medium mb-4">Projected balance</p>
-        <div ref={chartRef} className="w-full">
+        <div ref={chartRef} className="w-full min-w-0">
           {chartW > 0 && (
-            <AreaChart width={chartW} height={240} data={chartData}
-                       margin={{ top: 5, right: 8, left: -12, bottom: 0 }}>
+            <AreaChart width={chartW} height={chartW < 520 ? 200 : 240} data={chartData}
+                       margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="balanceFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={ct.mint} stopOpacity={0.35} />
@@ -182,7 +182,7 @@ export default function ForecastPage() {
         </div>
       </GlassCard>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 min-w-0">
         <GlassCard>
           <div className="flex items-center gap-2 mb-3">
             <Repeat size={15} className="text-violet" />

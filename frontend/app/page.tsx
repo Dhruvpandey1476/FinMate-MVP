@@ -135,10 +135,10 @@ export default function Dashboard() {
       )}
 
       {/* Hero row: Health Score gauge + key stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <GlassCard strong className="lg:col-span-1 flex flex-col items-center justify-center">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 mb-5 sm:mb-6">
+        <GlassCard strong className="edge-accent lg:col-span-1 flex flex-col items-center justify-center py-7">
           <HealthGauge score={score} />
-          <p className="text-sm text-fog mt-3">Financial Health Score</p>
+          <p className="text-sm text-fog mt-3 font-medium">Financial Health Score</p>
           <a href="/twin" className="text-xs text-mint hover:underline mt-1">
             See what drives this
           </a>
@@ -176,22 +176,24 @@ export default function Dashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Net Worth" value={formatINR(snapshot.net_worth)} icon={<Sparkle size={15} />} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-6">
+        <StatCard label="Net Worth" value={formatINR(snapshot.net_worth)} tint="violet" icon={<Sparkle size={15} className="text-violet" />} />
         <StatCard
           label="Savings Rate"
+          tint="mint"
           value={`${snapshot.savings_rate}%`}
           icon={snapshot.savings_rate >= 20 ? <TrendingUp size={15} className="text-mint" /> : <TrendingDown size={15} className="text-rose" />}
         />
         <StatCard
           label="Monthly Cash Flow"
+          tint={cashFlowPositive ? "mint" : "rose"}
           value={formatINR(snapshot.cash_flow)}
           accent={cashFlowPositive ? "text-mint" : "text-rose"}
         />
-        <StatCard label="Total Liabilities" value={formatINR(snapshot.total_liabilities)} accent="text-rose" />
+        <StatCard label="Total Liabilities" value={formatINR(snapshot.total_liabilities)} tint="rose" accent="text-rose" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* Goal Progress */}
         <GlassCard>
           <p className="text-sm text-fog mb-4">Goal Progress</p>
@@ -204,10 +206,10 @@ export default function Dashboard() {
               return (
                 <div key={g.id}>
                   <div className="flex justify-between text-sm mb-1.5">
-                    <span className="text-white">{g.name}</span>
-                    <span className="ledger text-fog">{formatINR(g.current_amount, { compact: true })} / {formatINR(g.target_amount, { compact: true })}</span>
+                    <span className="text-white truncate">{g.name}</span>
+                    <span className="ledger text-fog shrink-0 ml-2">{formatINR(g.current_amount, { compact: true })} / {formatINR(g.target_amount, { compact: true })}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-line overflow-hidden">
+                  <div className="h-2 rounded-full bg-white/[0.07] border border-line/60 overflow-hidden">
                     <div className="h-full rounded-full bg-gradient-to-r from-mint to-violet" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
@@ -237,14 +239,31 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ label, value, icon, accent }: { label: string; value: string; icon?: React.ReactNode; accent?: string }) {
+function StatCard({
+  label, value, icon, accent, tint = "mint",
+}: {
+  label: string; value: string; icon?: React.ReactNode;
+  accent?: string; tint?: "mint" | "violet" | "gold" | "rose";
+}) {
+  // A faint tinted wash per metric. In light mode four flat white cards in a
+  // row read as a spreadsheet; the tint gives each one an identity without
+  // resorting to heavy colour.
+  const washes = {
+    mint: "from-mint/[0.09] to-transparent",
+    violet: "from-violet/[0.09] to-transparent",
+    gold: "from-gold/[0.09] to-transparent",
+    rose: "from-rose/[0.09] to-transparent",
+  } as const;
+
   return (
-    <GlassCard hover className="!p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-mist">{label}</span>
-        {icon}
+    <GlassCard hover className={`!p-4 bg-gradient-to-br ${washes[tint]}`}>
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <span className="text-xs text-mist truncate">{label}</span>
+        <span className="shrink-0">{icon}</span>
       </div>
-      <p className={`ledger text-xl font-semibold ${accent || "text-white"}`}>{value}</p>
+      <p className={`ledger text-lg sm:text-xl font-semibold truncate ${accent || "text-white"}`}>
+        {value}
+      </p>
     </GlassCard>
   );
 }

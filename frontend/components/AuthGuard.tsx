@@ -34,9 +34,15 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex">
+    // overflow-x-hidden + min-w-0 together stop a wide child (a transaction
+    // table, a chart) from stretching the flex row past the viewport. Without
+    // min-w-0 a flex item refuses to shrink below its content, which pushed
+    // the page sideways on mobile and dragged the fixed header out of line.
+    <div className="flex w-full overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 min-h-screen px-6 md:px-10 pt-20 md:pt-8 pb-8 max-w-[1400px]">{children}</main>
+      <main className="flex-1 min-w-0 min-h-screen w-full px-4 sm:px-6 md:px-10 pt-[4.5rem] md:pt-8 pb-12">
+        <div className="max-w-[1400px] mx-auto">{children}</div>
+      </main>
     </div>
   );
 }

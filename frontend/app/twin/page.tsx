@@ -64,7 +64,7 @@ export default function FinancialTwinPage() {
         subtitle="A continuously updated mirror of your financial state."
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 mb-6">
         <GlassCard>
           <p className="text-sm text-fog mb-2">Assets</p>
           {assets.length === 0 ? (
@@ -104,9 +104,9 @@ export default function FinancialTwinPage() {
           </div>
         </GlassCard>
 
-        <GlassCard strong>
+        <GlassCard strong className="edge-accent">
           <p className="text-sm text-fog mb-2">Net Worth</p>
-          <p className="ledger text-3xl font-semibold text-white">
+          <p className="ledger text-3xl font-semibold text-gradient">
             {formatINR(snapshot?.net_worth ?? 0)}
           </p>
           <div className="mt-4 space-y-1">
@@ -128,7 +128,7 @@ export default function FinancialTwinPage() {
       {/* The health score is the hero number, so it ships with its own audit
           trail rather than appearing as an unexplained integer. */}
       <GlassCard className="mb-6">
-        <div className="flex items-start justify-between gap-6 flex-wrap">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 lg:gap-8">
           <div className="flex items-center gap-4">
             <div className="relative w-20 h-20 shrink-0">
               <svg viewBox="0 0 80 80" className="w-20 h-20 -rotate-90">
@@ -155,7 +155,7 @@ export default function FinancialTwinPage() {
             </div>
           </div>
 
-          <div className="flex-1 min-w-[280px] space-y-2">
+          <div className="flex-1 min-w-0 w-full space-y-2.5">
             {(snapshot?.health_breakdown ?? []).map((c) => (
               <div key={c.label} className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -184,8 +184,8 @@ export default function FinancialTwinPage() {
             No transactions yet — upload a statement or add one manually.
           </div>
         ) : (
-          <div className="overflow-x-auto scrollbar-thin">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto scrollbar-thin -mx-1 px-1">
+            <table className="w-full text-sm stack-table">
               <thead>
                 <tr className="text-left text-mist border-b border-line">
                   <th className="py-2 pr-4 font-normal">Date</th>
@@ -197,10 +197,11 @@ export default function FinancialTwinPage() {
               <tbody>
                 {transactions.map((t) => (
                   <tr key={t.id} className="border-b border-line/60 last:border-0">
-                    <td className="py-2 pr-4 text-mist whitespace-nowrap">{formatDate(t.date)}</td>
-                    <td className="py-2 pr-4 text-white">{t.category}</td>
-                    <td className="py-2 pr-4 text-mist">{t.merchant || "—"}</td>
+                    <td data-cell="date" className="py-2 pr-4 text-mist whitespace-nowrap text-xs sm:text-sm order-2">{formatDate(t.date)}</td>
+                    <td data-cell="category" className="py-2 pr-4 text-white font-medium">{t.category}</td>
+                    <td data-cell="merchant" className="py-2 pr-4 text-mist hidden sm:table-cell">{t.merchant || "—"}</td>
                     <td
+                      data-cell="amount"
                       className={`py-2 pr-4 ledger text-right whitespace-nowrap ${
                         t.amount >= 0 ? "text-mint" : "text-rose"
                       }`}
