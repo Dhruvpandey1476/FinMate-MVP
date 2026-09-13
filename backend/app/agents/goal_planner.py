@@ -8,7 +8,7 @@ import math
 from datetime import datetime
 from sqlalchemy.orm import Session
 from .. import models
-from ..services import financial_twin, llm_client
+from ..services import financial_twin, llm_client, cache, entitlements, prompt_safety
 
 GOAL_TEMPLATES = {
     "emergency_fund": {"label": "Emergency Fund", "default_months_of_expenses": 6},
@@ -45,8 +45,18 @@ def plan_for_goal(db: Session, user_id: int, goal_id: int) -> dict:
                     "percent_complete": round(min(running, goal.target_amount) / goal.target_amount * 100, 1),
                 })
 
-    # AI-generated recommendation
-    recommendation = _ai_recommendation(goal, remaining, available_for_goal, months_needed, snapshot)
+    # AI-generated recommendation, cached against this goal's state so opening
+    # the goals page repeatedly does not re-bill an identical LLM call.
+    fingerprint = (
+        f"{goal.id}:{goal.target_amount}:{goal.current_amount}:"
+        f"{goal.monthly_contribution}:{round(snapshot['cash_flow'], 0)}"
+    )
+    recommendation = cache.get(db, user_id, f"goal_plan:{goal.id}", fingerprint)
+    if recommendation is None:
+        recommendation = _ai_recommendation(
+            goal, remaining, available_for_goal, months_needed, snapshot, db, user_id
+        )
+        cache.put(db, user_id, f"goal_plan:{goal.id}", fingerprint, recommendation)
 
     return {
         "goal": {
@@ -64,11 +74,14 @@ def plan_for_goal(db: Session, user_id: int, goal_id: int) -> dict:
     }
 
 
-def _ai_recommendation(goal, remaining, available_for_goal, months_needed, snapshot) -> str:
+def _ai_recommendation(goal, remaining, available_for_goal, months_needed, snapshot, db, user_id) -> str:
     """Generate AI-powered recommendation for goal planning."""
+    fallback = _deterministic_recommendation(goal, remaining, available_for_goal, months_needed, snapshot)
+    if not llm_client.llm_configured():
+        return fallback
     prompt = f"""You are a financial advisor. Generate a 2-3 sentence actionable recommendation for this goal.
 
-Goal: {goal.name} ({goal.goal_type})
+Goal: {prompt_safety.scrub(goal.name, 80)} ({prompt_safety.scrub(goal.goal_type, 30)})
 Target: ₹{goal.target_amount:,.0f}
 Current progress: ₹{goal.current_amount:,.0f} ({(goal.current_amount/goal.target_amount*100) if goal.target_amount else 0:.0f}%)
 Remaining: ₹{remaining:,.0f}
@@ -80,14 +93,21 @@ User's risk profile: based on their financial health score of {snapshot['financi
 
 Give specific, actionable advice. If the goal seems achievable, encourage them. If it's a stretch, suggest practical ways to accelerate. Use ₹ with Indian formatting."""
 
-    fallback = _deterministic_recommendation(goal, remaining, available_for_goal, months_needed, snapshot)
-    
-    return llm_client.generate(
+    result = llm_client.generate_detailed(
         prompt=prompt,
         fallback=fallback,
-        system_prompt="You are FinMate, an AI financial advisor. Be concise and encouraging.",
+        system_prompt=(
+            "You are FinMate, an AI financial advisor. Be concise and encouraging. "
+            "You are not a SEBI-registered investment adviser; never name specific securities."
+            + prompt_safety.UNTRUSTED_DATA_NOTICE
+        ),
         temperature=0.6,
     )
+    entitlements.record_usage(
+        db, user_id, "goal_plan", result.provider, result.model,
+        result.prompt_tokens, result.completion_tokens, result.latency_ms, result.ok,
+    )
+    return result.text
 
 
 def _deterministic_recommendation(goal, remaining, available_for_goal, months_needed, snapshot) -> str:

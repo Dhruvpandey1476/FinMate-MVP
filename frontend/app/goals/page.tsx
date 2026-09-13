@@ -15,7 +15,7 @@ export default function GoalsPage() {
   const [form, setForm] = useState({ name: "", goal_type: "custom", target_amount: "", monthly_contribution: "" });
 
   function loadGoals() {
-    api.getGoals().then(setGoals).catch(() => {});
+    api.getGoals().then(setGoals).catch(() => {});  // panel is non-critical
   }
 
   useEffect(() => { loadGoals(); }, []);
@@ -116,7 +116,7 @@ export default function GoalsPage() {
                 <MiniStat label="Milestones" value={`${plan.milestones?.length || 0}`} />
               </div>
               <div className="space-y-2">
-                {plan.milestones?.map((m: any, i: number) => (
+                {plan.milestones?.map((m: { month: number; cumulative_amount: number; percent_complete: number }, i: number) => (
                   <div key={i} className="flex items-center gap-3">
                     <span className="text-xs text-mist w-14">Mo {m.month}</span>
                     <div className="flex-1 h-1.5 rounded-full bg-line overflow-hidden">

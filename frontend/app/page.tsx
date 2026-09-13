@@ -2,23 +2,40 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { TrendingUp, TrendingDown, AlertTriangle, Sparkle } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle, Sparkle, Clock } from "lucide-react";
 import { GlassCard, PageHeader } from "@/components/GlassCard";
+import { LoadingState, ErrorBoundary } from "@/components/ErrorBoundary";
+import { useToast } from "@/components/Toast";
 import { api, formatINR } from "@/lib/api";
+import type { Snapshot, CashflowPoint, Goal, Insight, User, Forecast } from "@/lib/types";
 
 export default function Dashboard() {
-  const [snapshot, setSnapshot] = useState<any>(null);
-  const [series, setSeries] = useState<any[]>([]);
-  const [goals, setGoals] = useState<any[]>([]);
-  const [insights, setInsights] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [series, setSeries] = useState<CashflowPoint[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [forecast, setForecast] = useState<Forecast | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
-    api.getSnapshot().then(setSnapshot).catch(() => {});
-    api.getCashflowSeries(6).then(setSeries).catch(() => {});
-    api.getGoals().then(setGoals).catch(() => {});
-    api.getInsights().then((d) => setInsights(d.slice(0, 3))).catch(() => {});
-    api.getUser().then(setUser).catch(() => {});
+    let cancelled = false;
+
+    // The snapshot gates the whole page, so a failure there is surfaced.
+    api.getSnapshot()
+      .then((s) => !cancelled && setSnapshot(s))
+      .catch((err) => !cancelled && toast.fromError(err));
+
+    // The rest are enrichments: degrade quietly rather than burying the page
+    // in toasts if one optional panel is unavailable.
+    api.getCashflowSeries(6).then((d) => !cancelled && setSeries(d)).catch(() => {});
+    api.getGoals().then((d) => !cancelled && setGoals(d)).catch(() => {});
+    api.getInsights().then((d) => !cancelled && setInsights(d.slice(0, 3))).catch(() => {});
+    api.getUser().then((d) => !cancelled && setUser(d)).catch(() => {});
+    api.getForecast(90).then((d) => !cancelled && setForecast(d)).catch(() => {});
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [loadingSample, setLoadingSample] = useState(false);
@@ -45,13 +62,14 @@ export default function Dashboard() {
     try {
       await api.loadSample();
       window.location.reload();
-    } catch {
+    } catch (err) {
+      toast.fromError(err);
       setLoadingSample(false);
     }
   }
 
   if (!snapshot) {
-    return <div className="text-mist">Loading your financial twin…</div>;
+    return <LoadingState label="Loading your financial twin…" />;
   }
 
   const isEmpty = snapshot.net_worth === 0 && snapshot.total_income_month === 0 && goals.length === 0;
@@ -98,11 +116,30 @@ export default function Dashboard() {
         subtitle="Your Financial Digital Twin, updated in real time."
       />
 
+      {forecast?.runway_days != null && forecast.runway_days <= 45 && (
+        <a href="/forecast" className="block mb-5">
+          <GlassCard strong className="border border-rose/30 hover:border-rose/50 transition-colors">
+            <div className="flex items-start gap-3">
+              <Clock size={18} className="text-rose mt-0.5 shrink-0" />
+              <div>
+                <p className="text-white font-medium mb-0.5">
+                  Cash runs low in {forecast.runway_days} days
+                </p>
+                <p className="text-sm text-mist">{forecast.summary}</p>
+              </div>
+            </div>
+          </GlassCard>
+        </a>
+      )}
+
       {/* Hero row: Health Score gauge + key stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
         <GlassCard strong className="lg:col-span-1 flex flex-col items-center justify-center">
           <HealthGauge score={score} />
           <p className="text-sm text-fog mt-3">Financial Health Score</p>
+          <a href="/twin" className="text-xs text-mint hover:underline mt-1">
+            See what drives this
+          </a>
         </GlassCard>
 
         <GlassCard className="lg:col-span-2 min-w-0">
@@ -157,6 +194,9 @@ export default function Dashboard() {
         <GlassCard>
           <p className="text-sm text-fog mb-4">Goal Progress</p>
           <div className="space-y-4">
+            {goals.length === 0 && (
+              <p className="text-sm text-mist">No goals yet — set one to get a timeline.</p>
+            )}
             {goals.map((g) => {
               const pct = Math.min((g.current_amount / g.target_amount) * 100, 100);
               return (

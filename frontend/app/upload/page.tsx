@@ -153,7 +153,7 @@ export default function UploadPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {result.transactions.map((t: any, i: number) => (
+                    {result.transactions.map((t: { date?: string; category?: string; merchant?: string | null; amount?: number }, i: number) => (
                       <tr key={i} className="border-b border-line/60 last:border-0">
                         <td className="py-2 pr-4 text-mist">
                           {new Date(t.date).toLocaleDateString("en-IN")}

@@ -11,6 +11,10 @@ chats and uploads. Runs locally in minutes.
 > **⚠️ Security first:** API keys were previously committed to `backend/.env` and
 > **must be rotated** (Groq, Gemini, OpenAI, Qdrant, Neo4j) before any deployment.
 > `.env` is now git-ignored. See `backend/.env.example`.
+>
+> Set `JWT_SECRET`, `ADMIN_KEY` and `CRON_KEY` in production — the app refuses to
+> boot with `ENV=production` and a default `JWT_SECRET`, and the admin/cron
+> endpoints stay disabled until their keys are set.
 
 ## Accounts
 
@@ -70,8 +74,52 @@ Set `NEXT_PUBLIC_API_URL` in `frontend/.env.local` to point at your backend
 | Goal Planning Agent | ✅ Real | Timelines, milestones, monthly contribution recommendations |
 | Opportunity Discovery | ✅ Real | Detects recurring subscriptions, spending leaks, unusual transactions |
 | 8 frontend pages | ✅ Real | Dashboard, Financial Twin, AI CFO Chat, Goals, Simulations, Insights, Memory Timeline, Settings |
-| LLM-backed reasoning | ⚙️ Optional | Groq/Gemini/OpenAI key — see Settings page |
+| Cash-Flow Forecast | ✅ Real | Detects recurring bills from history, projects balance day-by-day, answers "when do I run out?" |
+| Debt Optimizer | ✅ Real | Full amortisation, avalanche vs snowball, prepay-vs-invest with LTCG treatment |
+| Proactive nudges | ✅ Real | Digest engine writes dedup'd alerts (runway, budget overrun, goal risk); in-app now, WhatsApp when credentials are set |
+| Editable memory | ✅ Real | Users can correct, pin, mute or delete what the twin believes about them |
+| Usage metering & plans | ✅ Real | Every LLM call is metered; free/plus/pro quotas enforced per month |
+| LLM-backed reasoning | ✅ Real | Groq → Gemini → OpenAI → rule-based fallback, with SSE token streaming |
 | PostgreSQL / Neo4j / Qdrant | ⚙️ Upgrade path | Demo uses SQLite + in-process retrieval so it runs anywhere with no infra. `docker-compose.yml` spins up the production stack when you're ready — see `DEPLOYMENT.md` |
+
+## Running the tests
+
+```bash
+cd backend
+pytest tests/          # 150 tests, offline (no API keys needed, no billable calls)
+```
+
+CI (`.github/workflows/ci.yml`) runs these plus a schema-drift check that fails
+if a model changes without a matching Alembic migration, and a frontend
+type-check and build.
+
+## Migrations
+
+Schema is managed by Alembic, not `create_all()`. On startup the app migrates to
+head; an existing pre-Alembic database is stamped at the baseline first, so no
+data is lost. Never edit a model without generating a migration — CI will catch it.
+
+```bash
+cd backend
+alembic revision --autogenerate -m "describe the change"
+alembic upgrade head
+```
+
+## Operational notes
+
+- **Model ids drift.** Providers decommission models without notice
+  (`llama-3.3-70b-versatile` and `gemini-2.0-flash` both 404 now). They are set
+  via `GROQ_MODEL` / `GEMINI_MODEL` so they can be changed without a deploy. If
+  chat starts returning terse rule-based answers, check the logs — a failed
+  provider now logs the real HTTP status and body.
+- **Cost control.** `/api/admin/costs?key=$ADMIN_KEY` reports spend per provider
+  and per active user. Quotas are enforced per calendar month; burst limits are
+  per-minute. Insight enrichment is cached against a transaction fingerprint, so
+  a dashboard refresh costs nothing.
+- **Funnel.** `/api/admin/funnel?key=$ADMIN_KEY` shows signup → onboard → data →
+  first chat → D7 return. Set `POSTHOG_API_KEY` to mirror events to PostHog.
+- **Digest cron.** `POST /api/digest/run?key=$CRON_KEY` generates nudges for all
+  eligible users. Point a scheduler at it daily. Disabled unless `CRON_KEY` is set.
 
 **Why SQLite instead of Postgres/Neo4j/Qdrant for the demo:** those three require
 running servers, which makes "unzip and run" impossible and is exactly the kind

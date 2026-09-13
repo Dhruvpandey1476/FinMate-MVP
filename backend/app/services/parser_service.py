@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Optional
 
 import pandas as pd
-from ..services import llm_client
+from ..services import llm_client, prompt_safety
 
 logger = logging.getLogger("finmate.parser")
 
@@ -298,6 +298,12 @@ def _parse_pdf_text(fp) -> list[dict]:
     return txns
 
 
+_PARSER_SYSTEM_PROMPT = (
+    "You are a bank statement parser. You output only JSON describing "
+    "transactions you find in the supplied text."
+    + prompt_safety.UNTRUSTED_DATA_NOTICE
+)
+
 CATEGORIES_LIST = [
     "Salary", "Freelance", "Investment Returns", "Other Income",
     "Rent", "Groceries", "Food Delivery", "Transport", "Utilities",
@@ -326,10 +332,10 @@ def _parse_pdf_llm(fp) -> list[dict]:
     chunk_size = 10000
     chunks = [text[i:i + chunk_size] for i in range(0, min(len(text), 60000), chunk_size)] or [text]
     for chunk in chunks:
-        prompt = f"""You are a UPI/bank statement parser. Extract EVERY real transaction from the statement text below. The text may be JUMBLED or have interleaved/merged characters from PDF extraction — reconstruct it as best you can.
+        prompt = f"""You are a UPI/bank statement parser. Extract EVERY real transaction from the statement text below. The text may be JUMBLED or have interleaved/merged characters from PDF extraction - reconstruct it as best you can.
 
 STATEMENT TEXT:
-{chunk}
+{prompt_safety.fence("bank statement text", prompt_safety.scrub(chunk, chunk_size))}
 
 Return ONLY JSON of this exact shape:
 {{"transactions":[{{"date":"YYYY-MM-DD","amount":<number>,"description":"short text","category":"<one category>"}}]}}
@@ -340,7 +346,11 @@ RULES:
 - category must be one of: {', '.join(CATEGORIES_LIST)}.
 - Ignore summary/total/note/header lines — only real transactions.
 - If you find none, return {{"transactions":[]}}."""
-        data = llm_client.generate_json(prompt=prompt, fallback={"transactions": []})
+        data = llm_client.generate_json(
+            prompt=prompt,
+            system_prompt=_PARSER_SYSTEM_PROMPT,
+            fallback={"transactions": []},
+        )
         rows = data.get("transactions") if isinstance(data, dict) else None
         for t in rows or []:
             d = _parse_date(str(t.get("date", "")))
@@ -385,13 +395,15 @@ def categorize_transactions(transactions: list[dict]) -> list[dict]:
     for i, txn in enumerate(transactions[:100]):  # Limit to 100 per batch
         desc = txn.get("note", "") or txn.get("merchant", "") or "Unknown"
         amt = txn["amount"]
-        batch_items.append(f"{i}. Amount: ₹{amt:,.0f} | Description: {desc[:80]}")
+        batch_items.append(
+            f"{i}. Amount: Rs {amt:,.0f} | Description: {prompt_safety.scrub(desc, 80)}"
+        )
     
     prompt = f"""Categorize these bank transactions. Available categories:
 {', '.join(CATEGORIES)}
 
 Transactions:
-{chr(10).join(batch_items)}
+{prompt_safety.fence("transaction descriptions", chr(10).join(batch_items))}
 
 Respond with a JSON array of objects: [{{"index": 0, "category": "...", "merchant": "...", "is_recurring": false}}]
 - "merchant" should be a clean merchant name extracted from the description
@@ -399,11 +411,18 @@ Respond with a JSON array of objects: [{{"index": 0, "category": "...", "merchan
 Keep it simple and accurate."""
 
     try:
-        result = llm_client.generate_json(prompt=prompt, fallback=[])
+        result = llm_client.generate_json(
+            prompt=prompt, system_prompt=_PARSER_SYSTEM_PROMPT, fallback=[]
+        )
         
         if isinstance(result, list):
             for item in result:
-                idx = item.get("index", -1)
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    idx = int(item.get("index", -1))
+                except (TypeError, ValueError):
+                    continue
                 if 0 <= idx < len(transactions):
                     transactions[idx]["category"] = item.get("category", "Other")
                     if item.get("merchant"):

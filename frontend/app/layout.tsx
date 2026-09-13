@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AuthGuard from "@/components/AuthGuard";
+import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,7 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="bg-twin-glow bg-ink min-h-screen">
-        <AuthGuard>{children}</AuthGuard>
+        <ToastProvider>
+          <AuthGuard>{children}</AuthGuard>
+        </ToastProvider>
       </body>
     </html>
   );

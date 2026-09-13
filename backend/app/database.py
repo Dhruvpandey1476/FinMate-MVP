@@ -21,8 +21,19 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./finmate.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
+connect_args = {"check_same_thread": False} if IS_SQLITE else {}
+
+# Pool sizing matters: the CFO agent used to open a session per graph node, and
+# free-tier Postgres caps connections aggressively. Keep the pool small and
+# recycle so stale connections never surface as 500s.
+pool_kwargs = {} if IS_SQLITE else {
+    "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+    "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "5")),
+    "pool_recycle": 1800,
+    "pool_timeout": 30,
+}
+engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True, **pool_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -37,13 +48,19 @@ def get_db():
 
 # ─── Qdrant Vector DB ───────────────────────────────────────────────────────
 _qdrant_client = None
+_qdrant_tried = False
 
 
 def get_qdrant():
-    global _qdrant_client
+    """Connect once. A failed attempt is remembered so /api/health does not
+    re-dial an unreachable host on every request."""
+    global _qdrant_client, _qdrant_tried
 
     if _qdrant_client is not None:
         return _qdrant_client
+    if _qdrant_tried:
+        return None
+    _qdrant_tried = True
 
     try:
         from qdrant_client import QdrantClient
@@ -84,13 +101,18 @@ def get_qdrant():
 
 # ─── Neo4j Graph DB ─────────────────────────────────────────────────────────
 _neo4j_driver = None
+_neo4j_tried = False
 
 
 def get_neo4j():
-    global _neo4j_driver
+    """Connect once; remember failure so health checks stay fast."""
+    global _neo4j_driver, _neo4j_tried
 
     if _neo4j_driver is not None:
         return _neo4j_driver
+    if _neo4j_tried:
+        return None
+    _neo4j_tried = True
 
     try:
         from neo4j import GraphDatabase
@@ -99,9 +121,9 @@ def get_neo4j():
         user = os.getenv("NEO4J_USER")
         password = os.getenv("NEO4J_PASSWORD")
 
-        print("URI:", uri)
-        print("USER:", user)
-        print("PASSWORD SET:", bool(password))
+        if not uri:
+            logger.info("Neo4j not configured - using relational queries.")
+            return None
 
         driver = GraphDatabase.driver(
             uri,
@@ -110,13 +132,12 @@ def get_neo4j():
 
         driver.verify_connectivity()
 
-        print("NEO4J VERIFIED")
+        logger.info("Neo4j connected successfully.")
 
         _neo4j_driver = driver
         return driver
 
     except Exception as e:
-        print("NEO4J ERROR:", repr(e))
         logger.warning(
             "Neo4j unavailable (%s) — falling back to relational queries.",
             e

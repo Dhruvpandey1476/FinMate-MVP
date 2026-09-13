@@ -1,22 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Zap, LogOut, Trash2 } from "lucide-react";
 import { PageHeader, GlassCard, StatRow } from "@/components/GlassCard";
-import { api, formatINR } from "@/lib/api";
+import { useToast } from "@/components/Toast";
+import { api, formatINR, clearToken } from "@/lib/api";
+import type { PlanSummary } from "@/lib/types";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [plan, setPlan] = useState<PlanSummary | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     Promise.all([
       api.getUser().catch(() => null),
       api.getHealth().catch(() => null),
-    ]).then(([u, h]) => {
+      api.getPlan().catch(() => null),
+    ]).then(([u, h, p]) => {
       setUser(u);
       setHealth(h);
+      setPlan(p as PlanSummary | null);
       setLoading(false);
     });
   }, []);
@@ -101,6 +107,77 @@ export default function SettingsPage() {
               Spending Categories with DELAYS/BLOCKS relationships.
             </p>
           </div>
+        </div>
+      </GlassCard>
+
+      {/* Plan, usage and the data controls DPDP compliance requires. */}
+      <GlassCard className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap size={15} className="text-gold" />
+          <p className="text-sm text-white font-medium">
+            Plan &amp; usage{plan ? ` — ${plan.label}` : ""}
+          </p>
+        </div>
+
+        {plan ? (
+          <>
+            <div className="space-y-1 mb-4">
+              {Object.entries(plan.quotas).map(([kind, q]) => (
+                <StatRow
+                  key={kind}
+                  label={kind === "chat" ? "AI CFO messages" : kind === "simulate" ? "Simulations" : "Statement uploads"}
+                  value={q.limit < 0 ? "Unlimited" : `${q.used} / ${q.limit} this month`}
+                  accent={q.limit >= 0 && q.remaining === 0 ? "text-rose" : "text-white"}
+                />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(plan.features).map(([name, on]) => (
+                <span
+                  key={name}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border capitalize ${
+                    on ? "border-mint/30 text-mint bg-mint/10" : "border-line text-mist"
+                  }`}
+                >
+                  {name.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-mist">Plan details unavailable.</p>
+        )}
+
+        <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-line">
+          <button
+            onClick={async () => {
+              try {
+                await api.logoutAll();
+                clearToken();
+                window.location.href = "/login";
+              } catch (err) {
+                toast.fromError(err);
+              }
+            }}
+            className="text-xs px-3 py-2 rounded-lg border border-line text-fog hover:text-white transition-colors inline-flex items-center gap-1.5"
+          >
+            <LogOut size={12} /> Sign out everywhere
+          </button>
+          <button
+            onClick={async () => {
+              if (!window.confirm("Permanently delete your account and all financial data? This cannot be undone.")) return;
+              try {
+                await api.deleteAccount();
+                clearToken();
+                window.location.href = "/login";
+              } catch (err) {
+                toast.fromError(err);
+              }
+            }}
+            className="text-xs px-3 py-2 rounded-lg border border-rose/30 text-rose hover:bg-rose/10 transition-colors inline-flex items-center gap-1.5"
+          >
+            <Trash2 size={12} /> Delete account &amp; all data
+          </button>
         </div>
       </GlassCard>
     </div>

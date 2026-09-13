@@ -6,15 +6,19 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Fingerprint, MessageCircleHeart, Target,
   GitBranch, Lightbulb, History, Settings as SettingsIcon, Sparkles, Upload, LogOut, Menu, X,
+  TrendingUp, Landmark,
 } from "lucide-react";
 import clsx from "clsx";
 import { clearToken } from "@/lib/api";
+import NotificationBell from "./NotificationBell";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/twin", label: "Financial Twin", icon: Fingerprint },
   { href: "/chat", label: "AI CFO Chat", icon: MessageCircleHeart },
+  { href: "/forecast", label: "Cash Forecast", icon: TrendingUp },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/debt", label: "Debt Optimizer", icon: Landmark },
   { href: "/simulate", label: "Simulations", icon: GitBranch },
   { href: "/insights", label: "Insights", icon: Lightbulb },
   { href: "/memory", label: "Memory Timeline", icon: History },
@@ -78,8 +82,9 @@ export default function Sidebar() {
     <>
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 glass border-r border-line px-4 py-6">
-        <div className="px-2 mb-8">
+        <div className="px-2 mb-8 flex items-center justify-between">
           <Logo />
+          <NotificationBell />
         </div>
         <nav className="flex flex-col gap-1">{navLinks()}</nav>
         <div className="mt-auto">{logoutBtn}</div>
@@ -97,9 +102,12 @@ export default function Sidebar() {
       {/* Mobile top bar */}
       <header className="md:hidden fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 glass border-b border-line">
         <Logo />
-        <button onClick={() => setOpen(true)} aria-label="Open menu" className="p-2 text-fog hover:text-white">
-          <Menu size={22} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button onClick={() => setOpen(true)} aria-label="Open menu" className="p-2 text-fog hover:text-white">
+            <Menu size={22} />
+          </button>
+        </div>
       </header>
 
       {/* Mobile drawer */}

@@ -2,20 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { Repeat, TrendingDown, AlertCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PageHeader, GlassCard } from "@/components/GlassCard";
+import { useToast } from "@/components/Toast";
 import { api, formatINR } from "@/lib/api";
 
-const TYPE_META: Record<string, { icon: any; color: string; label: string }> = {
+const TYPE_META: Record<string, { icon: LucideIcon; color: string; label: string }> = {
   subscription: { icon: Repeat, color: "text-violet", label: "Subscription" },
   spending_leak: { icon: TrendingDown, color: "text-rose", label: "Spending Leak" },
   unusual_spending: { icon: AlertCircle, color: "text-gold", label: "Unusual Spending" },
 };
 
 export default function InsightsPage() {
+  const toast = useToast();
   const [insights, setInsights] = useState<any[]>([]);
 
   useEffect(() => {
-    api.getInsights().then(setInsights).catch(() => {});
+    api.getInsights().then(setInsights).catch((err) => toast.fromError(err));
   }, []);
 
   const totalImpact = insights.reduce((sum, i) => sum + (i.monthly_impact || 0), 0);

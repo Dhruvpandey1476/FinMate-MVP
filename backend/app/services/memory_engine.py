@@ -60,10 +60,12 @@ def ensure_collection():
     )    
 
 
-def add_memory(db: Session, user_id: int, memory_type: str, content: str, importance: float = 0.5) -> models.Memory:
+def add_memory(db: Session, user_id: int, memory_type: str, content: str,
+               importance: float = 0.5, source: str = "system") -> models.Memory:
     """
     Add a memory to both PostgreSQL (source of truth) and Qdrant (vector index).
     memory_type: episodic | semantic | behavioral
+    source:      system | user | chat | import  (shown in the memory UI)
     """
     # Always store in PostgreSQL
     mem = models.Memory(
@@ -72,6 +74,7 @@ def add_memory(db: Session, user_id: int, memory_type: str, content: str, import
         content=content,
         importance=importance,
         embedding_keywords=_keywords(content),
+        source=source,
     )
     db.add(mem)
     db.commit()
@@ -81,6 +84,62 @@ def add_memory(db: Session, user_id: int, memory_type: str, content: str, import
     _index_in_qdrant(mem)
 
     return mem
+
+
+def update_memory(db: Session, user_id: int, memory_id: int, **fields):
+    """
+    Edit a memory the user disagrees with.
+
+    Memory transparency is a trust feature: users must be able to correct what
+    the twin believes about them, and a corrected memory has to be re-embedded
+    or vector search would keep matching the old text.
+    """
+    mem = (
+        db.query(models.Memory)
+        .filter(models.Memory.id == memory_id, models.Memory.user_id == user_id)
+        .first()
+    )
+    if not mem:
+        return None
+
+    if "content" in fields and fields["content"]:
+        mem.content = str(fields["content"]).strip()[:2000]
+        mem.embedding_keywords = _keywords(mem.content)
+    if "importance" in fields and fields["importance"] is not None:
+        mem.importance = max(0.0, min(float(fields["importance"]), 1.0))
+    if "memory_type" in fields and fields["memory_type"] in ("episodic", "semantic", "behavioral"):
+        mem.memory_type = fields["memory_type"]
+    if "pinned" in fields and fields["pinned"] is not None:
+        mem.pinned = bool(fields["pinned"])
+    if "muted" in fields and fields["muted"] is not None:
+        mem.muted = bool(fields["muted"])
+
+    db.commit()
+    db.refresh(mem)
+    _index_in_qdrant(mem)
+    return mem
+
+
+def delete_memory(db: Session, user_id: int, memory_id: int) -> bool:
+    """Forget something permanently, in Postgres and in the vector index."""
+    mem = (
+        db.query(models.Memory)
+        .filter(models.Memory.id == memory_id, models.Memory.user_id == user_id)
+        .first()
+    )
+    if not mem:
+        return False
+
+    qdrant = get_qdrant()
+    if qdrant:
+        try:
+            qdrant.delete(collection_name=COLLECTION_NAME, points_selector=[mem.id])
+        except Exception as e:
+            logger.warning("Failed to remove memory %d from Qdrant: %s", mem.id, e)
+
+    db.delete(mem)
+    db.commit()
+    return True
 
 
 def _index_in_qdrant(mem: models.Memory):
@@ -119,30 +178,58 @@ def _index_in_qdrant(mem: models.Memory):
 def retrieve_relevant(db: Session, user_id: int, query: str, top_k: int = 6) -> list:
     """
     Retrieve relevant memories using vector similarity (Qdrant) or keyword fallback.
+
+    Pinned memories are always included - a user who pinned "I support my
+    parents" expects that to shape every answer, not only ones whose wording
+    happens to match. Muted memories are never returned.
     """
-    # Try Qdrant vector search first
+    results = []
     qdrant = get_qdrant()
     if qdrant:
         try:
-            results = _vector_search(qdrant, user_id, query, top_k)
+            results = _vector_search(db, qdrant, user_id, query, top_k)
             if results:
                 logger.info("Retrieved %d memories via Qdrant vector search", len(results))
-                return results
         except Exception as e:
-            logger.warning("Qdrant search failed: %s — falling back to keywords", e)
-    
-    # Fallback: keyword-based search
-    return _keyword_search(db, user_id, query, top_k)
+            logger.warning("Qdrant search failed: %s - falling back to keywords", e)
+
+    if not results:
+        results = _keyword_search(db, user_id, query, top_k)
+
+    return _merge_pinned(db, user_id, results, top_k)
 
 
-def _vector_search(qdrant, user_id: int, query: str, top_k: int) -> list:
-    """Semantic search using Qdrant vectors."""
+def _merge_pinned(db: Session, user_id: int, results: list, top_k: int) -> list:
+    """Put pinned memories first, then the retrieved ones, without duplicates."""
+    pinned = (
+        db.query(models.Memory)
+        .filter(
+            models.Memory.user_id == user_id,
+            models.Memory.pinned.is_(True),
+            models.Memory.muted.is_(False),
+        )
+        .order_by(models.Memory.importance.desc())
+        .limit(top_k)
+        .all()
+    )
+    seen = set()
+    merged = []
+    for m in list(pinned) + list(results):
+        if m.id in seen or getattr(m, "muted", False):
+            continue
+        seen.add(m.id)
+        merged.append(m)
+    return merged[: max(top_k, len(pinned))]
+
+
+def _vector_search(db: Session, qdrant, user_id: int, query: str, top_k: int) -> list:
+    """Semantic search using Qdrant vectors, hydrated from the caller's session."""
     from qdrant_client.models import Filter, FieldCondition, MatchValue
-    
+
     query_embedding = llm_client.get_embedding(query)
     if not query_embedding:
         return []
-    
+
     results = qdrant.search(
         collection_name=COLLECTION_NAME,
         query_vector=query_embedding,
@@ -152,27 +239,32 @@ def _vector_search(qdrant, user_id: int, query: str, top_k: int) -> list:
         limit=top_k,
         score_threshold=0.3,
     )
-    
     if not results:
         return []
-    
-    # Convert Qdrant results back to Memory-like objects for compatibility
+
     memory_ids = [r.id for r in results]
-    from ..database import SessionLocal
-    db = SessionLocal()
-    try:
-        memories = db.query(models.Memory).filter(models.Memory.id.in_(memory_ids)).all()
-        # Maintain Qdrant's relevance ordering
-        id_to_mem = {m.id: m for m in memories}
-        return [id_to_mem[mid] for mid in memory_ids if mid in id_to_mem]
-    finally:
-        db.close()
+    memories = (
+        db.query(models.Memory)
+        .filter(
+            models.Memory.id.in_(memory_ids),
+            models.Memory.user_id == user_id,   # defence in depth against a stale index
+            models.Memory.muted.is_(False),
+        )
+        .all()
+    )
+    # Maintain Qdrant's relevance ordering
+    id_to_mem = {m.id: m for m in memories}
+    return [id_to_mem[mid] for mid in memory_ids if mid in id_to_mem]
 
 
 def _keyword_search(db: Session, user_id: int, query: str, top_k: int) -> list:
     """Fallback: keyword overlap + importance scoring."""
     query_kw = set(_keywords(query).split())
-    all_memories = db.query(models.Memory).filter(models.Memory.user_id == user_id).all()
+    all_memories = (
+        db.query(models.Memory)
+        .filter(models.Memory.user_id == user_id, models.Memory.muted.is_(False))
+        .all()
+    )
 
     scored = []
     for m in all_memories:
@@ -197,8 +289,10 @@ def distill_from_message(db: Session, user_id: int, user_message: str):
     if len(msg) < 15:
         return
 
+    from ..services import prompt_safety
+
     prompt = f"""A user said the following to their AI financial advisor:
-"{msg}"
+{prompt_safety.fence("user message", prompt_safety.scrub(msg, 1500))}
 
 Extract 0-3 DURABLE facts worth remembering long-term about this user's finances,
 preferences, life plans, or behavior. Ignore one-off questions with no lasting signal.
@@ -231,7 +325,7 @@ Return [] if nothing is worth remembering."""
             imp = float(item.get("importance", 0.5))
         except (TypeError, ValueError):
             imp = 0.5
-        add_memory(db, user_id, mtype, content, max(0.3, min(imp, 0.9)))
+        add_memory(db, user_id, mtype, content, max(0.3, min(imp, 0.9)), source="chat")
         existing.add(content.lower())
 
 
@@ -267,7 +361,7 @@ def detect_behavioral_patterns(db: Session, user_id: int):
 
     for content, imp in facts:
         if content.lower() not in existing:
-            add_memory(db, user_id, "behavioral", content, imp)
+            add_memory(db, user_id, "behavioral", content, imp, source="system")
             existing.add(content.lower())
 
 
@@ -291,19 +385,40 @@ def _keywords(text: str) -> str:
     return " ".join(w for w in words if w not in STOPWORDS and len(w) > 2)
 
 
-def get_all_by_type(db: Session, user_id: int, memory_type: str) -> list:
+def get_all_by_type(db: Session, user_id: int, memory_type: str,
+                    limit: int = 200, offset: int = 0) -> list:
     return (
         db.query(models.Memory)
         .filter(models.Memory.user_id == user_id, models.Memory.memory_type == memory_type)
         .order_by(models.Memory.created_at.desc())
+        .offset(max(0, offset))
+        .limit(max(1, min(limit, 500)))
         .all()
     )
 
 
-def get_timeline(db: Session, user_id: int) -> list:
+def get_timeline(db: Session, user_id: int, limit: int = 200, offset: int = 0) -> list:
+    """
+    Newest-first memory timeline.
+
+    Paginated: an engaged user accumulates memories indefinitely, and the old
+    unbounded query would eventually ship thousands of rows to the browser.
+    Pinned entries float to the top so the twin's core beliefs stay visible.
+    """
     return (
         db.query(models.Memory)
         .filter(models.Memory.user_id == user_id)
-        .order_by(models.Memory.created_at.desc())
+        .order_by(models.Memory.pinned.desc(), models.Memory.created_at.desc())
+        .offset(max(0, offset))
+        .limit(max(1, min(limit, 500)))
         .all()
+    )
+
+
+def count_memories(db: Session, user_id: int) -> int:
+    from sqlalchemy import func as _func
+    return int(
+        db.query(_func.count(models.Memory.id))
+        .filter(models.Memory.user_id == user_id)
+        .scalar() or 0
     )

@@ -9,3 +9,6 @@ __pycache__/
 finmate.zip
 *.mp4
 *.tsbuildinfo
+.pytest_cache/
+_*.db
+*.log

@@ -13,7 +13,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from . import models
 from .database import SessionLocal, engine, Base
-from .services import memory_engine
+from .services import memory_engine, dedupe
 from . import auth
 
 random.seed(42)
@@ -41,10 +41,38 @@ RECURRING_MERCHANTS = {
 }
 
 
+def _add_txn(db: Session, user_id: int, _seen=None, **kwargs):
+    """
+    Insert a seeded transaction with a dedupe hash, matching real imports.
+
+    Sample data can randomly produce two identical rows in the same month, so
+    occurrence slots are walked exactly as an import would - otherwise seeding
+    trips the (user_id, dedupe_hash) unique constraint.
+    """
+    kwargs.setdefault("note", None)
+    kwargs.setdefault("merchant", None)
+
+    seen = _seen if _seen is not None else set()
+    for occurrence in range(100):
+        h = dedupe.transaction_hash(
+            kwargs["date"], kwargs["amount"], kwargs.get("merchant"),
+            kwargs.get("note"), occurrence,
+        )
+        if h not in seen:
+            seen.add(h)
+            kwargs["dedupe_hash"] = h
+            break
+    else:
+        return
+
+    db.add(models.Transaction(user_id=user_id, **kwargs))
+
+
 def seed_for_user(db: Session, user: models.User):
     """Populate one user's account with 6 months of sample data."""
     user.monthly_income = 85000
     user.risk_profile = "moderate"
+    seen_hashes = set()
 
     now = datetime.utcnow()
     for month_offset in range(5, -1, -1):
@@ -54,15 +82,15 @@ def seed_for_user(db: Session, user: models.User):
             month += 12
             year -= 1
 
-        db.add(models.Transaction(
-            user_id=user.id, date=datetime(year, month, 1), amount=85000, category="Salary",
+        _add_txn(
+            db, user.id, seen_hashes, date=datetime(year, month, 1), amount=85000, category="Salary",
             type="income", merchant="Employer Inc.", is_recurring=True, note="Monthly salary",
-        ))
+        )
         if month_offset == 0:
-            db.add(models.Transaction(
-                user_id=user.id, date=datetime(year, month, 1), amount=4500, category="Freelance",
+            _add_txn(
+                db, user.id, seen_hashes, date=datetime(year, month, 1), amount=4500, category="Freelance",
                 type="income", merchant="Side Project", is_recurring=False,
-            ))
+            )
 
         for category, (lo, hi, count) in EXPENSE_CATEGORIES.items():
             is_recurring = category in RECURRING_MERCHANTS
@@ -74,22 +102,22 @@ def seed_for_user(db: Session, user: models.User):
                     RECURRING_MERCHANTS[category][i % len(RECURRING_MERCHANTS[category])]
                     if is_recurring else None
                 )
-                db.add(models.Transaction(
-                    user_id=user.id, date=datetime(year, month, day), amount=-amt,
+                _add_txn(
+                    db, user.id, seen_hashes, date=datetime(year, month, day), amount=-amt,
                     category=category, type="expense", merchant=merchant, is_recurring=is_recurring,
-                ))
+                )
 
         if month_offset == 0:
             for i in range(6):
-                db.add(models.Transaction(
-                    user_id=user.id, date=datetime(year, month, min(28, 3 + i * 4)),
+                _add_txn(
+                    db, user.id, seen_hashes, date=datetime(year, month, min(28, 3 + i * 4)),
                     amount=-random.uniform(350, 700), category="Food Delivery",
                     type="expense", merchant="Swiggy/Zomato", is_recurring=False,
-                ))
-            db.add(models.Transaction(
-                user_id=user.id, date=datetime(year, month, 18), amount=-6200,
+                )
+            _add_txn(
+                db, user.id, seen_hashes, date=datetime(year, month, 18), amount=-6200,
                 category="Shopping", type="expense", merchant="Electronics Store",
-            ))
+            )
 
     db.add_all([
         models.Goal(user_id=user.id, name="Emergency Fund", goal_type="emergency_fund",
