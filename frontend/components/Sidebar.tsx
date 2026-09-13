@@ -11,6 +11,7 @@ import {
 import clsx from "clsx";
 import { clearToken } from "@/lib/api";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -30,7 +31,7 @@ function Logo() {
   return (
     <div className="flex items-center gap-2">
       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-mint to-violet flex items-center justify-center shadow-glow">
-        <Sparkles size={16} className="text-ink" />
+        <Sparkles size={16} className="text-onaccent" />
       </div>
       <span className="font-display font-semibold text-lg tracking-tight">FinMate</span>
     </div>
@@ -56,10 +57,10 @@ export default function Sidebar() {
           href={href}
           onClick={onClick}
           className={clsx(
-            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors",
+            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ease-swift",
             active
-              ? "bg-white/[0.06] text-white border border-line"
-              : "text-fog hover:text-white hover:bg-white/[0.03]"
+              ? "bg-white/[0.06] text-white border border-line shadow-glass"
+              : "text-fog hover:text-white hover:bg-white/[0.04] hover:translate-x-0.5"
           )}
         >
           <Icon size={17} className={active ? "text-mint" : "text-mist"} />
@@ -87,7 +88,12 @@ export default function Sidebar() {
           <NotificationBell />
         </div>
         <nav className="flex flex-col gap-1">{navLinks()}</nav>
-        <div className="mt-auto">{logoutBtn}</div>
+        <div className="mt-auto pt-4">
+          <div className="px-3 pb-3">
+            <ThemeToggle />
+          </div>
+          {logoutBtn}
+        </div>
         <div className="mt-3 px-3 py-4 rounded-xl glass-strong">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full bg-mint animate-pulse" />
@@ -103,6 +109,7 @@ export default function Sidebar() {
       <header className="md:hidden fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 glass border-b border-line">
         <Logo />
         <div className="flex items-center gap-1">
+          <ThemeToggle compact />
           <NotificationBell />
           <button onClick={() => setOpen(true)} aria-label="Open menu" className="p-2 text-fog hover:text-white">
             <Menu size={22} />

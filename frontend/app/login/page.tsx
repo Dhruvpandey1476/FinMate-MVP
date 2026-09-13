@@ -81,7 +81,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2 justify-center mb-8">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-mint to-violet flex items-center justify-center shadow-glow">
-            <Sparkles size={18} className="text-ink" />
+            <Sparkles size={18} className="text-onaccent" />
           </div>
           <span className="font-display font-semibold text-2xl tracking-tight">FinMate</span>
         </div>
@@ -118,7 +118,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-mint to-violet text-ink font-medium text-sm disabled:opacity-60"
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-mint to-violet text-onaccent font-medium text-sm disabled:opacity-60"
             >
               {loading ? "Please wait…" : mode === "magic" ? "Send login link" : mode === "signup" ? "Sign up" : "Log in"}
             </button>

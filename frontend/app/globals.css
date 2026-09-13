@@ -4,19 +4,97 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+/* ---------------------------------------------------------------------------
+   Theme tokens.
+
+   Light is the base so an unstyled render is never a black flash; dark is
+   applied by [data-theme="dark"], which ThemeToggle sets on <html> before
+   first paint. Values are "R G B" triples for Tailwind's <alpha-value>.
+--------------------------------------------------------------------------- */
 :root {
+  color-scheme: light;
+
+  --c-ink: 248 250 253;        /* page background */
+  --c-surface: 255 255 255;
+  --c-panel: 255 255 255;
+  --c-line: 226 232 240;       /* hairlines and borders */
+  --c-fg: 15 23 42;            /* primary text (Tailwind `white`) */
+  --c-fog: 71 85 105;          /* secondary text */
+  --c-mist: 100 116 139;       /* tertiary text */
+
+  /* Accents are darkened in light mode so they clear 4.5:1 on white. */
+  --c-mint: 5 150 105;
+  --c-violet: 109 74 232;
+  --c-gold: 180 118 20;
+  --c-rose: 220 60 78;
+
+  --c-on-accent: 255 255 255;  /* text on a filled accent */
+
+  --glass-bg: 255 255 255;
+  --glass-alpha: 0.72;
+  --glass-strong-alpha: 0.9;
+  --glass-border: 15 23 42;
+  --glass-border-alpha: 0.08;
+
+  --bg-glow:
+    radial-gradient(circle at 15% -5%, rgba(109, 74, 232, 0.10), transparent 45%),
+    radial-gradient(circle at 90% 5%, rgba(5, 150, 105, 0.09), transparent 42%);
+
+  --shadow-glass: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lift: 0 2px 4px rgba(15, 23, 42, 0.05), 0 12px 32px rgba(15, 23, 42, 0.10);
+  --shadow-glow: 0 0 0 1px rgba(5, 150, 105, 0.18), 0 8px 28px rgba(5, 150, 105, 0.16);
+}
+
+[data-theme="dark"] {
   color-scheme: dark;
+
+  --c-ink: 7 10 18;
+  --c-surface: 13 18 32;
+  --c-panel: 17 23 42;
+  --c-line: 30 39 64;
+  --c-fg: 232 236 246;
+  --c-fog: 168 178 201;
+  --c-mist: 94 106 135;
+
+  --c-mint: 39 224 166;
+  --c-violet: 139 124 255;
+  --c-gold: 240 184 96;
+  --c-rose: 255 107 122;
+
+  --c-on-accent: 7 10 18;
+
+  --glass-bg: 17 23 42;
+  --glass-alpha: 0.55;
+  --glass-strong-alpha: 0.78;
+  --glass-border: 255 255 255;
+  --glass-border-alpha: 0.07;
+
+  --bg-glow:
+    radial-gradient(circle at 20% 0%, rgba(139, 124, 255, 0.18), transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(39, 224, 166, 0.14), transparent 40%);
+
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 24px rgba(39, 224, 166, 0.25);
 }
 
 html, body {
-  background: #070A12;
-  color: #E8ECF6;
+  background-color: rgb(var(--c-ink));
+  color: rgb(var(--c-fg));
   font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Retint rather than cross-fade: animating colour on every element during a
+   theme switch is expensive and causes visible tearing on large pages. */
+html.theme-switching,
+html.theme-switching * {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease !important;
 }
 
 /* Ledger signature: every numeric financial figure gets the same fixed-width,
-   tabular treatment with a faint underline tick — this is FinMate's one
-   recurring visual signature, used consistently instead of scattered effects. */
+   tabular treatment — FinMate's one recurring visual signature. */
 .ledger {
   font-family: 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
@@ -24,48 +102,86 @@ html, body {
 }
 
 .glass {
-  background: rgba(17, 23, 42, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgb(var(--glass-bg) / var(--glass-alpha));
+  border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
 
 .glass-strong {
-  background: rgba(17, 23, 42, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgb(var(--glass-bg) / var(--glass-strong-alpha));
+  border: 1px solid rgb(var(--glass-border) / calc(var(--glass-border-alpha) + 0.02));
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
 }
 
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
+/* Cards lift slightly on hover where they are interactive. */
+.card-hover {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 220ms ease;
 }
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #1E2740;
-  border-radius: 999px;
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-line)) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-line));
+  border-radius: 999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--c-mist));
 }
 
 ::selection {
-  background: rgba(39, 224, 166, 0.3);
+  background: rgb(var(--c-mint) / 0.28);
+  color: rgb(var(--c-fg));
 }
 
-a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: 2px solid #27E0A6;
+a:focus-visible, button:focus-visible, input:focus-visible,
+textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid rgb(var(--c-mint));
   outline-offset: 2px;
+  border-radius: 8px;
 }
+
+/* Native controls inherit the theme instead of rendering as light widgets. */
+input, textarea, select, button { font-family: inherit; }
+input[type="range"] { accent-color: rgb(var(--c-mint)); }
+input[type="checkbox"] { accent-color: rgb(var(--c-mint)); }
+select option { background: rgb(var(--c-panel)); color: rgb(var(--c-fg)); }
 
 /* Used by toasts and the live agent-reasoning trace as steps stream in. */
 @keyframes finmate-fade-up {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-in {
-  animation: finmate-fade-up 0.22s ease-out both;
+.animate-in { animation: finmate-fade-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes finmate-shimmer {
+  100% { transform: translateX(100%); }
 }
+.shimmer { position: relative; overflow: hidden; }
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--c-fg) / 0.06), transparent);
+  animation: finmate-shimmer 1.6s infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-in { animation: none; }
+  *, .animate-in, .shimmer::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .card-hover:hover { transform: none; }
 }

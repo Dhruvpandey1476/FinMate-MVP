@@ -77,10 +77,10 @@ export function LoadingState({ label = "Loading…" }: { label?: string }) {
 export function SkeletonCard({ lines = 3 }: { lines?: number }) {
   return (
     <GlassCard>
-      <div className="animate-pulse space-y-3">
-        <div className="h-3 bg-white/[0.06] rounded w-1/3" />
+      <div className="shimmer space-y-3">
+        <div className="h-3 bg-white/[0.08] rounded-full w-1/3" />
         {Array.from({ length: lines }).map((_, i) => (
-          <div key={i} className="h-2.5 bg-white/[0.04] rounded" style={{ width: `${90 - i * 15}%` }} />
+          <div key={i} className="h-2.5 bg-white/[0.05] rounded-full" style={{ width: `${90 - i * 15}%` }} />
         ))}
       </div>
     </GlassCard>

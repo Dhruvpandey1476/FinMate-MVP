@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AuthGuard from "@/components/AuthGuard";
 import { ToastProvider } from "@/components/Toast";
+import { themeScript } from "@/components/ThemeToggle";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,8 +11,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-twin-glow bg-ink min-h-screen">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="bg-twin-glow bg-ink text-white min-h-screen antialiased">
         <ToastProvider>
           <AuthGuard>{children}</AuthGuard>
         </ToastProvider>

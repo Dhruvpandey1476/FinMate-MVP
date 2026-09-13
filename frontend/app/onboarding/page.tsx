@@ -56,7 +56,7 @@ export default function Onboarding() {
     <div className="max-w-2xl">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-mint to-violet flex items-center justify-center shadow-glow">
-          <Sparkles size={14} className="text-ink" />
+          <Sparkles size={14} className="text-onaccent" />
         </div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Quick setup</h1>
       </div>
@@ -135,7 +135,7 @@ export default function Onboarding() {
         <div className="flex items-center gap-3">
           <button
             type="submit" disabled={saving}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-mint to-violet text-ink font-medium text-sm disabled:opacity-60"
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-mint to-violet text-onaccent font-medium text-sm disabled:opacity-60"
           >
             {saving ? "Setting up…" : "Build my Financial Twin"}
           </button>

@@ -290,7 +290,7 @@ export default function ChatPage() {
               disabled={!input.trim()}
               className="w-10 h-10 rounded-xl bg-gradient-to-br from-mint to-violet flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
             >
-              <Send size={16} className="text-ink" />
+              <Send size={16} className="text-onaccent" />
             </button>
           )}
         </form>

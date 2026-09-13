@@ -152,7 +152,7 @@ export default function DebtPage() {
             />
             <button
               type="submit"
-              className="sm:col-span-5 text-sm px-4 py-2 rounded-lg bg-gradient-to-br from-mint to-violet text-ink font-medium"
+              className="sm:col-span-5 text-sm px-4 py-2 rounded-lg bg-gradient-to-br from-mint to-violet text-onaccent font-medium"
             >
               Save debt
             </button>

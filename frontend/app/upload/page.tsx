@@ -91,7 +91,7 @@ export default function UploadPage() {
               <p className="text-xs text-mist mb-4">
                 Supports CSV and PDF formats • Max 10MB
               </p>
-              <label className="h-10 px-6 rounded-xl bg-gradient-to-br from-mint to-violet text-ink text-sm font-medium flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
+              <label className="h-10 px-6 rounded-xl bg-gradient-to-br from-mint to-violet text-onaccent text-sm font-medium flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
                 <FileText size={16} />
                 Browse Files
                 <input

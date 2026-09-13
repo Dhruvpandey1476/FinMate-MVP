@@ -5,6 +5,7 @@ import { Activity, Info } from "lucide-react";
 import { PageHeader, GlassCard, StatRow } from "@/components/GlassCard";
 import { LoadingState, ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/components/Toast";
+import { useChartTheme } from "@/lib/chartTheme";
 import { api, formatINR, formatDate } from "@/lib/api";
 import type { Snapshot, Transaction } from "@/lib/types";
 
@@ -21,6 +22,7 @@ function scoreColor(score: number) {
 }
 
 export default function FinancialTwinPage() {
+  const ct = useChartTheme();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [liabilities, setLiabilities] = useState<Liability[]>([]);
@@ -130,10 +132,10 @@ export default function FinancialTwinPage() {
           <div className="flex items-center gap-4">
             <div className="relative w-20 h-20 shrink-0">
               <svg viewBox="0 0 80 80" className="w-20 h-20 -rotate-90">
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#1E2740" strokeWidth="7" />
+                <circle cx="40" cy="40" r="34" fill="none" stroke={ct.grid} strokeWidth="7" />
                 <circle
                   cx="40" cy="40" r="34" fill="none" strokeWidth="7" strokeLinecap="round"
-                  stroke={score >= 70 ? "#27E0A6" : score >= 45 ? "#F0B860" : "#FF6B7A"}
+                  stroke={score >= 70 ? ct.mint : score >= 45 ? ct.gold : ct.rose}
                   strokeDasharray={`${(score / 100) * 2 * Math.PI * 34} ${2 * Math.PI * 34}`}
                 />
               </svg>

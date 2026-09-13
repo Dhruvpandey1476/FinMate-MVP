@@ -31,7 +31,7 @@ export default function Welcome() {
       <header className="flex items-center justify-between px-6 md:px-12 py-6 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-mint to-violet flex items-center justify-center shadow-glow">
-            <Sparkles size={16} className="text-ink" />
+            <Sparkles size={16} className="text-onaccent" />
           </div>
           <span className="font-display font-semibold text-lg tracking-tight">FinMate</span>
         </div>
@@ -58,7 +58,7 @@ export default function Welcome() {
         <div className="flex items-center justify-center gap-3 mt-9">
           <Link
             href="/login"
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint to-violet text-ink font-medium text-sm"
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint to-violet text-onaccent font-medium text-sm"
           >
             Get started free
           </Link>
@@ -103,7 +103,7 @@ export default function Welcome() {
             <button
               type="submit"
               disabled={busy}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint to-violet text-ink font-medium text-sm disabled:opacity-60"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint to-violet text-onaccent font-medium text-sm disabled:opacity-60"
             >
               {busy ? "…" : "Join waitlist"}
             </button>

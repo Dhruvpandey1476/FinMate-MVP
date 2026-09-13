@@ -1,5 +1,12 @@
 /** @type {import('tailwindcss').Config} */
+
+// Every colour resolves through a CSS variable holding an "R G B" triple, so a
+// single `data-theme` swap retints the whole app and no component needs to know
+// which theme is active. `<alpha-value>` keeps Tailwind's /opacity modifiers working.
+const v = (name) => `rgb(var(${name}) / <alpha-value>)`;
+
 module.exports = {
+  darkMode: ["class", '[data-theme="dark"]'],
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -7,16 +14,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#070A12",
-        surface: "#0D1220",
-        panel: "#11172A",
-        line: "#1E2740",
-        mint: "#27E0A6",
-        violet: "#8B7CFF",
-        gold: "#F0B860",
-        rose: "#FF6B7A",
-        fog: "#A8B2C9",
-        mist: "#5E6A87",
+        ink: v("--c-ink"),
+        surface: v("--c-surface"),
+        panel: v("--c-panel"),
+        line: v("--c-line"),
+        mint: v("--c-mint"),
+        violet: v("--c-violet"),
+        gold: v("--c-gold"),
+        rose: v("--c-rose"),
+        fog: v("--c-fog"),
+        mist: v("--c-mist"),
+
+        // `white` is remapped to the primary foreground. Existing `text-white`
+        // becomes near-black in light mode, and `bg-white/[0.04]` overlays
+        // invert into a subtle dark wash — both correct, with no edits.
+        white: v("--c-fg"),
+
+        // Text that sits on a mint/violet accent. Stays dark in both themes
+        // because the accents are light in both.
+        onaccent: v("--c-on-accent"),
       },
       fontFamily: {
         display: ["Space Grotesk", "sans-serif"],
@@ -24,11 +40,15 @@ module.exports = {
         mono: ["JetBrains Mono", "monospace"],
       },
       backgroundImage: {
-        "twin-glow": "radial-gradient(circle at 20% 0%, rgba(139,124,255,0.18), transparent 45%), radial-gradient(circle at 90% 10%, rgba(39,224,166,0.14), transparent 40%)",
+        "twin-glow": "var(--bg-glow)",
       },
       boxShadow: {
-        glass: "0 8px 32px rgba(0,0,0,0.35)",
-        glow: "0 0 24px rgba(39,224,166,0.25)",
+        glass: "var(--shadow-glass)",
+        glow: "var(--shadow-glow)",
+        lift: "var(--shadow-lift)",
+      },
+      transitionTimingFunction: {
+        swift: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
     },
   },

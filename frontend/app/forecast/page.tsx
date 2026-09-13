@@ -10,12 +10,14 @@ import {
 import { GlassCard, PageHeader, StatRow } from "@/components/GlassCard";
 import { LoadingState, EmptyState, ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/components/Toast";
+import { useChartTheme, tooltipStyle } from "@/lib/chartTheme";
 import { api, formatINR, formatDate } from "@/lib/api";
 import type { Forecast, BudgetCategory } from "@/lib/types";
 
 const HORIZONS = [30, 60, 90, 180];
 
 export default function ForecastPage() {
+  const ct = useChartTheme();
   const [days, setDays] = useState(90);
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [budget, setBudget] = useState<BudgetCategory[]>([]);
@@ -151,31 +153,28 @@ export default function ForecastPage() {
                        margin={{ top: 5, right: 8, left: -12, bottom: 0 }}>
               <defs>
                 <linearGradient id="balanceFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#27E0A6" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#27E0A6" stopOpacity={0} />
+                  <stop offset="0%" stopColor={ct.mint} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={ct.mint} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#1E2740" vertical={false} />
+              <CartesianGrid stroke={ct.grid} vertical={false} />
               <XAxis
-                dataKey="label" stroke="#5E6A87" fontSize={11} tickLine={false}
+                dataKey="label" stroke={ct.axis} fontSize={11} tickLine={false}
                 axisLine={false} minTickGap={40}
               />
               <YAxis
-                stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
+                stroke={ct.axis} fontSize={11} tickLine={false} axisLine={false}
                 tickFormatter={(v) => formatINR(Number(v), { compact: true })}
               />
               <Tooltip
-                contentStyle={{
-                  background: "#11172A", border: "1px solid #1E2740",
-                  borderRadius: 12, fontSize: 12,
-                }}
-                labelStyle={{ color: "#A8B2C9" }}
+                contentStyle={tooltipStyle(ct)}
+                labelStyle={{ color: ct.axis }}
                 formatter={(v: number) => [formatINR(v), "Balance"]}
               />
               {/* Zero line makes "goes negative" legible at a glance. */}
-              <ReferenceLine y={0} stroke="#FF6B7A" strokeDasharray="3 3" />
+              <ReferenceLine y={0} stroke={ct.rose} strokeDasharray="3 3" />
               <Area
-                type="monotone" dataKey="balance" stroke="#27E0A6"
+                type="monotone" dataKey="balance" stroke={ct.mint}
                 strokeWidth={2} fill="url(#balanceFill)"
               />
             </AreaChart>

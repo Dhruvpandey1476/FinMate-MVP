@@ -9,6 +9,7 @@ import { PageHeader, GlassCard, StatRow } from "@/components/GlassCard";
 import { ChartBox } from "@/components/ChartBox";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/components/Toast";
+import { useChartTheme, tooltipStyle } from "@/lib/chartTheme";
 import { api, formatINR } from "@/lib/api";
 import type { SimulationResult, PlanSummary } from "@/lib/types";
 
@@ -21,6 +22,7 @@ const SCENARIOS = [
 ] as const;
 
 export default function SimulatePage() {
+  const ct = useChartTheme();
   const [scenarioType, setScenarioType] = useState<string>("purchase");
   const [value, setValue] = useState("50000");
   const [months, setMonths] = useState(12);
@@ -167,7 +169,7 @@ export default function SimulatePage() {
 
             <button
               type="submit" disabled={loading}
-              className="w-full h-10 rounded-lg bg-gradient-to-br from-mint to-violet text-ink text-sm font-medium disabled:opacity-50"
+              className="w-full h-10 rounded-lg bg-gradient-to-br from-mint to-violet text-onaccent text-sm font-medium disabled:opacity-50"
             >
               {loading ? "Simulating…" : "Run Simulation"}
             </button>
@@ -186,23 +188,23 @@ export default function SimulatePage() {
               <ChartBox height={260}>
                 {(w) => (
                   <LineChart width={w} height={260} data={chartData}>
-                    <CartesianGrid stroke="#1E2740" vertical={false} />
+                    <CartesianGrid stroke={ct.grid} vertical={false} />
                     <XAxis
-                      dataKey="month" stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
-                      label={{ value: "Months ahead", position: "insideBottom", offset: -2, fill: "#5E6A87", fontSize: 11 }}
+                      dataKey="month" stroke={ct.axis} fontSize={11} tickLine={false} axisLine={false}
+                      label={{ value: "Months ahead", position: "insideBottom", offset: -2, fill: ct.axis, fontSize: 11 }}
                     />
                     <YAxis
-                      stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
+                      stroke={ct.axis} fontSize={11} tickLine={false} axisLine={false}
                       tickFormatter={(v) => formatINR(Number(v), { compact: true })}
                     />
                     <Tooltip
-                      contentStyle={{ background: "#11172A", border: "1px solid #1E2740", borderRadius: 12, fontSize: 12 }}
+                      contentStyle={tooltipStyle(ct)}
                       formatter={(v: number) => formatINR(v)}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Line type="monotone" dataKey="baseline" stroke="#5E6A87" strokeWidth={2} dot={false} name="Current trajectory" />
-                    <Line type="monotone" dataKey="projected" stroke="#27E0A6" strokeWidth={2.5} dot={false} name="With this scenario" />
-                    <Line type="monotone" dataKey="real" stroke="#8B7CFF" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="In today's money" />
+                    <Line type="monotone" dataKey="baseline" stroke={ct.axis} strokeWidth={2} dot={false} name="Current trajectory" />
+                    <Line type="monotone" dataKey="projected" stroke={ct.mint} strokeWidth={2.5} dot={false} name="With this scenario" />
+                    <Line type="monotone" dataKey="real" stroke={ct.violet} strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="In today's money" />
                   </LineChart>
                 )}
               </ChartBox>
@@ -219,19 +221,19 @@ export default function SimulatePage() {
                   <ChartBox height={200}>
                     {(w) => (
                       <ComposedChart width={w} height={200} data={mc.bands}>
-                        <CartesianGrid stroke="#1E2740" vertical={false} />
-                        <XAxis dataKey="month" stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false} />
+                        <CartesianGrid stroke={ct.grid} vertical={false} />
+                        <XAxis dataKey="month" stroke={ct.axis} fontSize={11} tickLine={false} axisLine={false} />
                         <YAxis
-                          stroke="#5E6A87" fontSize={11} tickLine={false} axisLine={false}
+                          stroke={ct.axis} fontSize={11} tickLine={false} axisLine={false}
                           tickFormatter={(v) => formatINR(Number(v), { compact: true })}
                         />
                         <Tooltip
-                          contentStyle={{ background: "#11172A", border: "1px solid #1E2740", borderRadius: 12, fontSize: 12 }}
+                          contentStyle={tooltipStyle(ct)}
                           formatter={(v: number) => formatINR(v)}
                         />
-                        <Area type="monotone" dataKey="p90" stroke="none" fill="#8B7CFF" fillOpacity={0.14} name="Optimistic" />
-                        <Area type="monotone" dataKey="p10" stroke="none" fill="#070A12" fillOpacity={1} name="Pessimistic" />
-                        <Line type="monotone" dataKey="p50" stroke="#8B7CFF" strokeWidth={2} dot={false} name="Median" />
+                        <Area type="monotone" dataKey="p90" stroke="none" fill={ct.violet} fillOpacity={0.14} name="Optimistic" />
+                        <Area type="monotone" dataKey="p10" stroke="none" fill={ct.tooltipBg} fillOpacity={1} name="Pessimistic" />
+                        <Line type="monotone" dataKey="p50" stroke={ct.violet} strokeWidth={2} dot={false} name="Median" />
                       </ComposedChart>
                     )}
                   </ChartBox>

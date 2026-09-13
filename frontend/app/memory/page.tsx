@@ -133,7 +133,7 @@ export default function MemoryPage() {
               <button
                 type="submit"
                 disabled={newContent.trim().length < 3}
-                className="text-sm px-4 py-2 rounded-lg bg-gradient-to-br from-mint to-violet text-ink font-medium disabled:opacity-40"
+                className="text-sm px-4 py-2 rounded-lg bg-gradient-to-br from-mint to-violet text-onaccent font-medium disabled:opacity-40"
               >
                 Remember this
               </button>

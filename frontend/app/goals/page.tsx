@@ -44,7 +44,7 @@ export default function GoalsPage() {
         <PageHeader title="Goals" subtitle="Emergency fund, vehicle, home, education, startup — tracked and planned." />
         <button
           onClick={() => setShowForm((s) => !s)}
-          className="h-10 px-4 rounded-xl bg-gradient-to-br from-mint to-violet text-ink text-sm font-medium flex items-center gap-1.5"
+          className="h-10 px-4 rounded-xl bg-gradient-to-br from-mint to-violet text-onaccent text-sm font-medium flex items-center gap-1.5"
         >
           <Plus size={16} /> New Goal
         </button>
