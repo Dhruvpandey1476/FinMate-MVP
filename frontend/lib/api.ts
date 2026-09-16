@@ -4,6 +4,7 @@ import type {
   SimulationResult, RecurringItem, TraceStep, User,
   SafeToSpend, EarlyWarningResponse, TimeMachine, NextBestAction, CoreLoop,
   ReportMeta, GeneratedReport, FamilyView, CreditHealth, DonationRow,
+  ContributorView,
 } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
@@ -301,7 +302,7 @@ export const api = {
 
   // Goals
   getGoals: () => request<Goal[]>("/api/goals/"),
-  createGoal: (data: Partial<Goal>) =>
+  createGoal: (data: Partial<Goal> & { target_date?: string }) =>
     request<Goal>("/api/goals/", { method: "POST", body: JSON.stringify(data) }),
   updateGoal: (id: number, data: Partial<Goal>) =>
     request<Goal>(`/api/goals/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
@@ -392,7 +393,7 @@ export const api = {
 
   // Goal contributors
   getContributors: (goalId: number) =>
-    request<Record<string, unknown>>(`/api/goals/${goalId}/contributors`),
+    request<ContributorView>(`/api/goals/${goalId}/contributors`),
   addContributor: (goalId: number, data: Record<string, unknown>) =>
     request(`/api/goals/${goalId}/contributors`, { method: "POST", body: JSON.stringify(data) }),
   removeContributor: (goalId: number, id: number) =>

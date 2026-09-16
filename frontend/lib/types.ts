@@ -417,3 +417,22 @@ export interface DonationRow {
   receipt_ref?: string | null;
   note?: string | null;
 }
+
+export interface ContributorRow {
+  id: number;
+  name: string;
+  relationship: string;
+  monthly_amount: number;
+  committed_lump_sum: number;
+  contributed_so_far: number;
+  share_of_monthly: number;
+}
+
+export interface ContributorView {
+  goal: { id: number; name: string; target: number; saved: number; remaining: number };
+  contributors: ContributorRow[];
+  pledged_monthly: number;
+  pledged_lump_sum: number;
+  contributed_so_far: number;
+  months_to_target: number | null;
+}

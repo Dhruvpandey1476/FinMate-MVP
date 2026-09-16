@@ -48,10 +48,14 @@ class GoalCreate(BaseModel):
     current_amount: float = 0.0
     monthly_contribution: float = 0.0
     priority: int = 2
+    # A wedding has a date, and without it the plan cannot work out whether the
+    # current pace actually gets there in time.
+    target_date: Optional[datetime] = None
 
 
 class GoalUpdate(BaseModel):
     name: Optional[str] = None
+    target_date: Optional[datetime] = None
     goal_type: Optional[str] = None
     target_amount: Optional[float] = None
     current_amount: Optional[float] = None
