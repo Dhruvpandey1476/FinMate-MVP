@@ -240,11 +240,27 @@ export default function ForecastPage() {
         </GlassCard>
       </div>
 
-      {budget.length > 0 && (
-        <GlassCard className="mt-4">
-          <p className="text-sm text-white font-medium mb-3">
-            This month versus your usual pace
-          </p>
+      {/* Always rendered. Hiding this when the comparison has nothing to say is
+          indistinguishable from the feature being broken or missing - it needs
+          to explain what it is waiting for instead. */}
+      <GlassCard className="mt-4">
+        <p className="text-sm text-white font-medium mb-3">
+          This month versus your usual pace
+        </p>
+
+        {budget.length === 0 ? (
+          <div className="text-sm text-mist leading-relaxed space-y-2 py-1">
+            <p>
+              Nothing to compare yet. This needs at least one spending category that
+              appears <span className="text-fog">both this month and in the previous
+              three months</span>, so there is a normal pace to measure against.
+            </p>
+            <p className="text-xs">
+              If you have just signed up, or your last import only covers older months,
+              add a few recent transactions and this fills in automatically.
+            </p>
+          </div>
+        ) : (
           <div className="space-y-3">
             {budget.slice(0, 6).map((c) => {
               const over = c.over_by > 0;
@@ -281,8 +297,8 @@ export default function ForecastPage() {
               );
             })}
           </div>
-        </GlassCard>
-      )}
+        )}
+      </GlassCard>
     </ErrorBoundary>
   );
 }
