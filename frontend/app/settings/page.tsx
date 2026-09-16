@@ -111,6 +111,16 @@ export default function SettingsPage() {
       </GlassCard>
 
 
+      <GlassCard className="mb-6">
+        <p className="text-sm text-white font-medium mb-2">WhatsApp Quick Add</p>
+        <p className="text-sm text-mist leading-relaxed">
+          The green chat bubble is a <span className="text-fog">preview of the intended
+          experience</span>. It runs entirely inside FinMate and does not send or receive
+          anything on WhatsApp. Real delivery via the WhatsApp Business API is on the
+          roadmap — the parser it calls is the same one a webhook would use.
+        </p>
+      </GlassCard>
+
       {/* Build stamp: lets you tell a stale bundle from a failing API at a
           glance, which is otherwise guesswork on a deployed site. */}
       <GlassCard className="mb-6">

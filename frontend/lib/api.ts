@@ -369,6 +369,20 @@ export const api = {
   getDuplicates: () =>
     request<{ duplicate_groups: number; extra_rows: number }>("/api/upload/duplicates"),
 
+  // Quick Add
+  quickAdd: (text: string) =>
+    request<{
+      ok: boolean; reply: string; parsed_by?: string; category_source?: string;
+      transaction?: { id: number; amount: number; category: string; merchant: string };
+    }>("/api/quickadd/", { method: "POST", body: JSON.stringify({ text }) }),
+  correctCategory: (transaction_id: number, category: string) =>
+    request<{ ok: boolean; reply: string; category: string }>("/api/quickadd/correct", {
+      method: "POST", body: JSON.stringify({ transaction_id, category }),
+    }),
+  getQuickAddCategories: () => request<string[]>("/api/quickadd/categories"),
+  getMerchantRules: () =>
+    request<{ merchant: string; category: string; corrections: number }[]>("/api/quickadd/rules"),
+
   // Tier 1 Core Loop
   getCoreLoop: () => request<CoreLoop>("/api/dashboard/core"),
   getSafeToSpend: (horizonDays = 14) =>

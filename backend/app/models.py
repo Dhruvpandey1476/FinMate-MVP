@@ -241,3 +241,26 @@ class BalanceCheckpoint(Base):
     note = Column(String, nullable=True)
     source = Column(String, default="user")  # user | onboarding | import
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MerchantRule(Base):
+    """
+    A user's own merchant -> category mapping, learned from their corrections.
+
+    This is the correction loop: recategorise Swiggy once and it stays fixed,
+    for that user only. Scoped per user because the same merchant name means
+    different things to different people, and a shared rule would let one
+    person's correction degrade everyone else's categorisation.
+    """
+    __tablename__ = "merchant_rules"
+    __table_args__ = (
+        UniqueConstraint("user_id", "merchant_key", name="uq_merchant_rule"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    merchant_key = Column(String, index=True)  # normalised, see services/dedupe
+    category = Column(String, nullable=False)
+    hit_count = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import QuickAdd from "@/components/core/QuickAdd";
 import { getToken } from "@/lib/api";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -43,6 +44,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       <main className="flex-1 min-w-0 min-h-screen w-full px-4 sm:px-6 md:px-10 pt-[4.5rem] md:pt-8 pb-12">
         <div className="max-w-[1400px] mx-auto">{children}</div>
       </main>
+      <QuickAdd />
     </div>
   );
 }
