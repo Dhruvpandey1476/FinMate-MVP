@@ -8,6 +8,7 @@ import { LoadingState, ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/components/Toast";
 import { useChartTheme, tooltipStyle } from "@/lib/chartTheme";
 import { api, formatINR, ApiError } from "@/lib/api";
+import { readCoreCache, writeCoreCache } from "@/lib/coreCache";
 import SafeToSpendHero from "@/components/core/SafeToSpendHero";
 import EarlyWarningBanner from "@/components/core/EarlyWarningBanner";
 import TimeMachine from "@/components/core/TimeMachine";
@@ -28,7 +29,10 @@ export default function Dashboard() {
   const [forecast, setForecast] = useState<Forecast | null>(null);
   // The Core Loop arrives in one request so the hero renders together rather
   // than popping in four separate times.
-  const [core, setCore] = useState<CoreLoop | null>(null);
+  // Seeded from the per-tab cache: a remount then repaints the full hero
+  // immediately instead of dropping back to the pre-data layout, which is what
+  // made the dashboard look like it had reverted to the old design.
+  const [core, setCore] = useState<CoreLoop | null>(() => readCoreCache());
   const [coreError, setCoreError] = useState<ApiError | null>(null);
   const [coreNonce, setCoreNonce] = useState(0);
   const toast = useToast();
@@ -56,6 +60,7 @@ export default function Dashboard() {
         if (cancelled) return;
         setCore(d);
         setCoreError(null);
+        writeCoreCache(d);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -173,7 +178,12 @@ export default function Dashboard() {
         <SafeToSpendHero
           data={core.safe_to_spend}
           onUpdated={(next: SafeToSpend) =>
-            setCore((c) => (c ? { ...c, safe_to_spend: next } : c))
+            setCore((c) => {
+              if (!c) return c;
+              const updated = { ...c, safe_to_spend: next };
+              writeCoreCache(updated);
+              return updated;
+            })
           }
         />
       )}
@@ -184,7 +194,12 @@ export default function Dashboard() {
             <TimeMachine
               data={core.time_machine}
               onChange={(next: TimeMachineData) =>
-                setCore((c) => (c ? { ...c, time_machine: next } : c))
+                setCore((c) => {
+                  if (!c) return c;
+                  const updated = { ...c, time_machine: next };
+                  writeCoreCache(updated);
+                  return updated;
+                })
               }
             />
           )}
@@ -194,7 +209,12 @@ export default function Dashboard() {
             <NextBestActionCard
               data={core.next_best_action}
               onRefreshed={(next: NextBestAction) =>
-                setCore((c) => (c ? { ...c, next_best_action: next } : c))
+                setCore((c) => {
+                  if (!c) return c;
+                  const updated = { ...c, next_best_action: next };
+                  writeCoreCache(updated);
+                  return updated;
+                })
               }
             />
           )}

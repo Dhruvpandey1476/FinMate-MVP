@@ -27,7 +27,16 @@ export function setToken(token: string) {
   if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token);
 }
 export function clearToken() {
-  if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEY);
+  // The cached Core Loop holds the signed-in user's financial position. It must
+  // not survive a logout, or the next sign-in in this tab would briefly paint
+  // the previous user's figures.
+  try {
+    sessionStorage.removeItem("finmate_core_loop");
+  } catch {
+    /* ignore */
+  }
 }
 
 function authHeaders(): Record<string, string> {
