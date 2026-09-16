@@ -309,3 +309,11 @@ select option { background: rgb(var(--c-panel)); color: rgb(var(--c-fg)); }
   .report-doc > * { break-inside: avoid; }
   a[href]::after { content: ""; }
 }
+
+/* The sidebar's decorative footer card costs ~100px. With 16 nav links the rail
+   needs that space on a typical laptop, so the card only appears on displays
+   tall enough to show every link without scrolling. The nav scrolls regardless,
+   so this is comfort rather than correctness. */
+@media (max-height: 1049px) {
+  .sidebar-flair { display: none; }
+}

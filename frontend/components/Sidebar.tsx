@@ -87,19 +87,24 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 glass border-r border-line px-4 py-6">
-        <div className="px-2 mb-8 flex items-center justify-between">
+      {/* overflow-hidden on the rail plus a scrolling nav: the link list grew
+          past a viewport height, and a fixed-height flex column with no scroll
+          region simply renders its overflow outside the panel. */}
+      <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 glass border-r border-line px-4 py-6 overflow-hidden">
+        <div className="px-2 mb-6 flex items-center justify-between shrink-0">
           <Logo />
           <NotificationBell />
         </div>
-        <nav className="flex flex-col gap-1">{navLinks()}</nav>
-        <div className="mt-auto pt-4">
+        <nav className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto scrollbar-thin -mx-1 px-1">
+          {navLinks()}
+        </nav>
+        <div className="shrink-0 pt-4">
           <div className="px-3 pb-3">
             <ThemeToggle />
           </div>
           {logoutBtn}
         </div>
-        <div className="mt-3 px-3 py-4 rounded-xl glass-strong">
+        <div className="sidebar-flair shrink-0 mt-3 px-3 py-4 rounded-xl glass-strong">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full bg-mint animate-pulse" />
             <p className="text-xs text-mint font-medium">AI-Powered</p>
@@ -126,15 +131,20 @@ export default function Sidebar() {
       {open && (
         <div className="md:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-72 max-w-[80%] glass-strong border-r border-line px-4 py-6 flex flex-col">
-            <div className="flex items-center justify-between mb-8 px-2">
+          <div className="absolute left-0 top-0 h-full w-72 max-w-[80%] glass-strong border-r border-line px-4 py-6 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between mb-6 px-2 shrink-0">
               <Logo />
               <button onClick={() => setOpen(false)} aria-label="Close menu" className="p-1 text-fog hover:text-white">
                 <X size={22} />
               </button>
             </div>
-            <nav className="flex flex-col gap-1">{navLinks(() => setOpen(false))}</nav>
-            <div className="mt-auto">{logoutBtn}</div>
+            <nav className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto scrollbar-thin -mx-1 px-1">
+              {navLinks(() => setOpen(false))}
+            </nav>
+            <div className="shrink-0 pt-3 border-t border-line mt-3">
+              <ThemeToggle />
+              {logoutBtn}
+            </div>
           </div>
         </div>
       )}
