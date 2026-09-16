@@ -59,7 +59,10 @@ export default function Dashboard() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setCore(null);
+        // Deliberately does NOT clear `core`. Nulling it on a failed refresh
+        // tore down a Core Loop that had already rendered, so the dashboard
+        // visibly snapped back to its old layout a few seconds after loading.
+        // Keep the last good data and report the failure alongside it.
         setCoreError(err instanceof ApiError ? err : new ApiError("Request failed", 0));
       });
 
@@ -149,8 +152,17 @@ export default function Dashboard() {
            This ordering is the product thesis made visible. Everything below
            it (health gauge, cash-flow chart, goals) is supporting detail. */}
 
-      {coreError && (
+      {coreError && !core && (
         <CoreLoopUnavailable error={coreError} onRetry={() => setCoreNonce((n) => n + 1)} />
+      )}
+
+      {coreError && core && (
+        <p className="text-xs text-gold mb-3">
+          Showing the last loaded figures — the latest refresh didn&apos;t reach the server.{" "}
+          <button onClick={() => setCoreNonce((n) => n + 1)} className="underline hover:text-white">
+            Retry
+          </button>
+        </p>
       )}
 
       {core?.early_warning && core.early_warning.length > 0 && (

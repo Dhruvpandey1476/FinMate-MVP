@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Loader2, Zap, LogOut, Trash2 } from "lucide-react";
 import { PageHeader, GlassCard, StatRow } from "@/components/GlassCard";
 import { useToast } from "@/components/Toast";
-import { api, formatINR, clearToken } from "@/lib/api";
+import { api, formatINR, clearToken, apiBaseUrl } from "@/lib/api";
 import type { PlanSummary } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -108,6 +108,30 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+      </GlassCard>
+
+
+      {/* Build stamp: lets you tell a stale bundle from a failing API at a
+          glance, which is otherwise guesswork on a deployed site. */}
+      <GlassCard className="mb-6">
+        <p className="text-sm text-white font-medium mb-3">Build</p>
+        <div className="space-y-1">
+          <StatRow label="Frontend commit" value={process.env.NEXT_PUBLIC_BUILD_SHA ?? "unknown"} />
+          <StatRow
+            label="Built at"
+            value={
+              process.env.NEXT_PUBLIC_BUILD_TIME
+                ? new Date(process.env.NEXT_PUBLIC_BUILD_TIME).toLocaleString()
+                : "unknown"
+            }
+          />
+          <StatRow label="API endpoint" value={apiBaseUrl} />
+        </div>
+        <p className="text-xs text-mist mt-3 leading-relaxed">
+          If the commit here isn&apos;t your latest push, the browser or CDN is serving an
+          older bundle — hard-reload, or redeploy. NEXT_PUBLIC_* values are compiled in at
+          build time, so changing them in a hosting dashboard needs a fresh deploy.
+        </p>
       </GlassCard>
 
       {/* Plan, usage and the data controls DPDP compliance requires. */}

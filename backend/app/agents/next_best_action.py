@@ -287,8 +287,16 @@ Respond with JSON only:
     return {"action_text": fallback_action, "why_text": fallback_why}
 
 
-def run(db: Session, user_id: int, user=None) -> dict:
-    """The single action to put in front of the user right now."""
+def run(db: Session, user_id: int, user=None, phrase: bool = True) -> dict:
+    """
+    The single action to put in front of the user right now.
+
+    `phrase=False` returns the deterministic pick without the LLM wording pass.
+    The dashboard aggregate uses it on a cold cache: the ranking is instant, but
+    the phrasing call is a network round trip that can take tens of seconds on a
+    cold host, and blocking the whole dashboard on it risks a gateway timeout
+    that leaves the user with no Core Loop at all.
+    """
     candidates = collect_candidates(db, user_id, user)
 
     if not candidates:
@@ -302,8 +310,12 @@ def run(db: Session, user_id: int, user=None) -> dict:
         }
 
     chosen = candidates[0]
-    snapshot = financial_twin.get_snapshot(db, user_id)
-    phrased = _phrase(db, user_id, chosen, snapshot)
+    if phrase:
+        snapshot = financial_twin.get_snapshot(db, user_id)
+        phrased = _phrase(db, user_id, chosen, snapshot)
+    else:
+        phrased = {"action_text": chosen["action_text"],
+                   "why_text": chosen.get("context", "")}
 
     return {
         "action_text": phrased["action_text"],
@@ -317,6 +329,7 @@ def run(db: Session, user_id: int, user=None) -> dict:
         # Surfaced so the UI (and an investor) can see the ranking was not an
         # LLM judgement call.
         "decided_by": "deterministic_scoring",
+        "phrased": phrase,
         "runners_up": [
             {"action_text": c["action_text"], "score": c["score"], "source": c["source"]}
             for c in candidates[1:4]

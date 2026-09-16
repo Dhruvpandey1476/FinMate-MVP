@@ -261,6 +261,22 @@ def get_candidates(db: Session = Depends(get_db),
 
 # --- Aggregate -------------------------------------------------------------
 
+def _next_best_action_fast(db: Session, user: models.User) -> dict:
+    """
+    Cached phrasing if we have it, the deterministic pick if we do not.
+
+    The aggregate must stay fast: blocking it on an LLM round trip risks a
+    gateway timeout on a cold host, and a timed-out aggregate means the whole
+    Core Loop is missing rather than merely unpolished. The client can request
+    the phrased version separately once the page is up.
+    """
+    fingerprint = financial_twin.transactions_fingerprint(db, user.id)
+    cached = cache.get(db, user.id, "next_best_action", fingerprint)
+    if cached is not None:
+        return cached
+    return next_best_action.run(db, user.id, user=user, phrase=False)
+
+
 @router.get("/dashboard/core")
 def core_loop(db: Session = Depends(get_db),
               user: models.User = Depends(get_current_user)):
@@ -270,7 +286,7 @@ def core_loop(db: Session = Depends(get_db),
         ("safe_to_spend", lambda: sts_service.compute(db, user.id)),
         ("early_warning", lambda: early_warning.check(db, user.id)),
         ("time_machine", lambda: _time_machine(db, user.id, 12)),
-        ("next_best_action", lambda: get_next_best_action(False, db, user)),
+        ("next_best_action", lambda: _next_best_action_fast(db, user)),
     ):
         try:
             out[key] = fn()
