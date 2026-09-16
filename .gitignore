@@ -12,3 +12,4 @@ finmate.zip
 .pytest_cache/
 _*.db
 *.log
+.next-check/

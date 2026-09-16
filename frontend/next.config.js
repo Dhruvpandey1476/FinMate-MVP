@@ -20,6 +20,13 @@ function commitSha() {
 
 const nextConfig = {
   reactStrictMode: true,
+
+  // A production build writes into the same .next the dev server is serving
+  // from, so running one while `npm run dev` is up corrupts the dev server:
+  // deleted webpack chunks, 404s on /_next/static, and
+  // "__webpack_modules__[moduleId] is not a function". `npm run build:check`
+  // sets this to a scratch directory so verification builds never collide.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   env: {
     NEXT_PUBLIC_BUILD_SHA: commitSha(),
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
