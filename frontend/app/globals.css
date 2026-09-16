@@ -236,3 +236,37 @@ select option { background: rgb(var(--c-panel)); color: rgb(var(--c-fg)); }
     font-size: 0.9375rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Quick Add chat surface.
+
+   Styled after WhatsApp so the interaction reads instantly, and WhatsApp has
+   both a light and a dark theme - hardcoding its dark palette left the widget
+   unreadable on a light page. These follow the app's theme, and the muted tone
+   is lifted above WhatsApp's own #8696a0, which fails contrast for hint text.
+--------------------------------------------------------------------------- */
+:root {
+  --wa-header: 0 128 105;
+  --wa-bg: 235 229 221;
+  --wa-in: 255 255 255;
+  --wa-out: 215 247 197;
+  --wa-text: 17 27 33;
+  --wa-muted: 80 96 106;
+  --wa-input: 255 255 255;
+  --wa-field: 242 242 242;
+  --wa-send: 0 128 105;
+  --wa-send-fg: 255 255 255;
+}
+
+[data-theme="dark"] {
+  --wa-header: 32 44 51;
+  --wa-bg: 11 20 26;
+  --wa-in: 32 44 51;
+  --wa-out: 0 92 75;
+  --wa-text: 233 237 239;
+  --wa-muted: 160 174 183;
+  --wa-input: 32 44 51;
+  --wa-field: 42 57 66;
+  --wa-send: 37 211 102;
+  --wa-send-fg: 11 20 26;
+}
