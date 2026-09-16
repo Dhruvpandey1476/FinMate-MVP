@@ -6,6 +6,17 @@ import type {
 } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+
+/**
+ * The backend this build talks to.
+ *
+ * NEXT_PUBLIC_* is inlined at BUILD time, not read at runtime - so changing it
+ * in a hosting dashboard has no effect until the app is rebuilt. Exported so
+ * the UI can show which backend it is actually calling when a request fails,
+ * which is the single most common cause of "my deploy shows no changes".
+ */
+export const apiBaseUrl = API_BASE;
+export const isLocalApi = /localhost|127\.0\.0\.1/.test(API_BASE);
 const TOKEN_KEY = "finmate_token";
 
 export function getToken(): string | null {

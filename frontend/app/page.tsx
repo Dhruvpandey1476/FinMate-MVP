@@ -7,11 +7,12 @@ import { GlassCard, PageHeader } from "@/components/GlassCard";
 import { LoadingState, ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/components/Toast";
 import { useChartTheme, tooltipStyle } from "@/lib/chartTheme";
-import { api, formatINR } from "@/lib/api";
+import { api, formatINR, ApiError } from "@/lib/api";
 import SafeToSpendHero from "@/components/core/SafeToSpendHero";
 import EarlyWarningBanner from "@/components/core/EarlyWarningBanner";
 import TimeMachine from "@/components/core/TimeMachine";
 import NextBestActionCard from "@/components/core/NextBestActionCard";
+import CoreLoopUnavailable from "@/components/core/CoreLoopUnavailable";
 import type {
   Snapshot, CashflowPoint, Goal, Insight, User, Forecast, CoreLoop,
   SafeToSpend, TimeMachine as TimeMachineData, NextBestAction,
@@ -28,6 +29,8 @@ export default function Dashboard() {
   // The Core Loop arrives in one request so the hero renders together rather
   // than popping in four separate times.
   const [core, setCore] = useState<CoreLoop | null>(null);
+  const [coreError, setCoreError] = useState<ApiError | null>(null);
+  const [coreNonce, setCoreNonce] = useState(0);
   const toast = useToast();
 
   useEffect(() => {
@@ -45,11 +48,24 @@ export default function Dashboard() {
     api.getInsights().then((d) => !cancelled && setInsights(d.slice(0, 3))).catch(() => {});
     api.getUser().then((d) => !cancelled && setUser(d)).catch(() => {});
     api.getForecast(90).then((d) => !cancelled && setForecast(d)).catch(() => {});
-    api.getCoreLoop().then((d) => !cancelled && setCore(d)).catch(() => {});
+    // Never swallow this one. Every Core Loop section is gated on its data, so
+    // a silent failure makes the dashboard look unchanged rather than broken -
+    // which is indistinguishable from a deploy that did not take effect.
+    api.getCoreLoop()
+      .then((d) => {
+        if (cancelled) return;
+        setCore(d);
+        setCoreError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setCore(null);
+        setCoreError(err instanceof ApiError ? err : new ApiError("Request failed", 0));
+      });
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [coreNonce]);
 
   const [loadingSample, setLoadingSample] = useState(false);
 
@@ -132,6 +148,10 @@ export default function Dashboard() {
       {/* ---- Core Loop: understand -> warn -> predict -> decide ----
            This ordering is the product thesis made visible. Everything below
            it (health gauge, cash-flow chart, goals) is supporting detail. */}
+
+      {coreError && (
+        <CoreLoopUnavailable error={coreError} onRetry={() => setCoreNonce((n) => n + 1)} />
+      )}
 
       {core?.early_warning && core.early_warning.length > 0 && (
         <EarlyWarningBanner warnings={core.early_warning} />
