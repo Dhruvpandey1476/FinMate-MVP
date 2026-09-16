@@ -88,8 +88,11 @@ export default function NotificationBell() {
         )}
       </button>
 
+      {/* On mobile the bell sits at the right of the top bar, so the panel hangs
+          leftward. In the desktop rail that would put it off the left edge of
+          the screen, so there it opens outward over the page instead. */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[90vw] glass-strong border border-line rounded-xl shadow-glass z-50 overflow-hidden">
+        <div className="absolute right-0 md:right-auto md:left-0 mt-2 w-80 max-w-[90vw] glass-strong border border-line rounded-xl shadow-glass z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <p className="text-sm text-white font-medium">Nudges</p>
             <button

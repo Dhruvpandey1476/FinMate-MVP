@@ -87,10 +87,11 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      {/* overflow-hidden on the rail plus a scrolling nav: the link list grew
-          past a viewport height, and a fixed-height flex column with no scroll
-          region simply renders its overflow outside the panel. */}
-      <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 glass border-r border-line px-4 py-6 overflow-hidden">
+      {/* The scrolling nav is what contains the link list once it outgrows a
+          viewport. The rail itself must stay overflow-visible so the bell's
+          panel can open out over the page, and sticky makes its own stacking
+          context, so it needs a z-index to sit above the content it covers. */}
+      <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 z-30 glass border-r border-line px-4 py-6">
         <div className="px-2 mb-6 flex items-center justify-between shrink-0">
           <Logo />
           <NotificationBell />

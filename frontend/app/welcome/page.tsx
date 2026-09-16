@@ -48,7 +48,10 @@ export default function Welcome() {
         </div>
         <h1 className="font-display text-4xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
           Your money, with a
-          <span className="bg-gradient-to-r from-mint to-violet bg-clip-text text-transparent"> memory</span>.
+          {/* The clip box is the padding box, so the tail of the "y" falls outside
+              it and is painted transparent - the page colour shows through the
+              descender. The padding grows the box; the margin cancels it. */}
+          <span className="bg-gradient-to-r from-mint to-violet bg-clip-text text-transparent pb-[0.12em] -mb-[0.12em]"> memory</span>.
         </h1>
         <p className="text-mist text-lg mt-6 max-w-xl mx-auto">
           Budgeting apps show you the past. FinMate builds a financial digital twin that

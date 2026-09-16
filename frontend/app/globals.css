@@ -198,6 +198,11 @@ select option { background: rgb(var(--c-panel)); color: rgb(var(--c-fg)); }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* Clipping is to the padding box, so a descender that drops below the content
+     box gets no gradient and the page colour shows through it. Grow the box,
+     then cancel the growth so nothing moves. */
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
 }
 
 /* A hairline accent along the top edge of a feature card. */
