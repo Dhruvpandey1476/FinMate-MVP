@@ -8,7 +8,14 @@ import { LoadingState, ErrorBoundary } from "@/components/ErrorBoundary";
 import { useToast } from "@/components/Toast";
 import { useChartTheme, tooltipStyle } from "@/lib/chartTheme";
 import { api, formatINR } from "@/lib/api";
-import type { Snapshot, CashflowPoint, Goal, Insight, User, Forecast } from "@/lib/types";
+import SafeToSpendHero from "@/components/core/SafeToSpendHero";
+import EarlyWarningBanner from "@/components/core/EarlyWarningBanner";
+import TimeMachine from "@/components/core/TimeMachine";
+import NextBestActionCard from "@/components/core/NextBestActionCard";
+import type {
+  Snapshot, CashflowPoint, Goal, Insight, User, Forecast, CoreLoop,
+  SafeToSpend, TimeMachine as TimeMachineData, NextBestAction,
+} from "@/lib/types";
 
 export default function Dashboard() {
   const ct = useChartTheme();
@@ -18,6 +25,9 @@ export default function Dashboard() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [forecast, setForecast] = useState<Forecast | null>(null);
+  // The Core Loop arrives in one request so the hero renders together rather
+  // than popping in four separate times.
+  const [core, setCore] = useState<CoreLoop | null>(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -35,6 +45,7 @@ export default function Dashboard() {
     api.getInsights().then((d) => !cancelled && setInsights(d.slice(0, 3))).catch(() => {});
     api.getUser().then((d) => !cancelled && setUser(d)).catch(() => {});
     api.getForecast(90).then((d) => !cancelled && setForecast(d)).catch(() => {});
+    api.getCoreLoop().then((d) => !cancelled && setCore(d)).catch(() => {});
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,21 +129,45 @@ export default function Dashboard() {
         subtitle="Your Financial Digital Twin, updated in real time."
       />
 
-      {forecast?.runway_days != null && forecast.runway_days <= 45 && (
-        <a href="/forecast" className="block mb-5">
-          <GlassCard strong className="border border-rose/30 hover:border-rose/50 transition-colors">
-            <div className="flex items-start gap-3">
-              <Clock size={18} className="text-rose mt-0.5 shrink-0" />
-              <div>
-                <p className="text-white font-medium mb-0.5">
-                  Cash runs low in {forecast.runway_days} days
-                </p>
-                <p className="text-sm text-mist">{forecast.summary}</p>
-              </div>
-            </div>
-          </GlassCard>
-        </a>
+      {/* ---- Core Loop: understand -> warn -> predict -> decide ----
+           This ordering is the product thesis made visible. Everything below
+           it (health gauge, cash-flow chart, goals) is supporting detail. */}
+
+      {core?.early_warning && core.early_warning.length > 0 && (
+        <EarlyWarningBanner warnings={core.early_warning} />
       )}
+
+      {core?.safe_to_spend && (
+        <SafeToSpendHero
+          data={core.safe_to_spend}
+          onUpdated={(next: SafeToSpend) =>
+            setCore((c) => (c ? { ...c, safe_to_spend: next } : c))
+          }
+        />
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5 mb-5">
+        <div className="lg:col-span-3 min-w-0">
+          {core?.time_machine && (
+            <TimeMachine
+              data={core.time_machine}
+              onChange={(next: TimeMachineData) =>
+                setCore((c) => (c ? { ...c, time_machine: next } : c))
+              }
+            />
+          )}
+        </div>
+        <div className="lg:col-span-2 min-w-0">
+          {core?.next_best_action && (
+            <NextBestActionCard
+              data={core.next_best_action}
+              onRefreshed={(next: NextBestAction) =>
+                setCore((c) => (c ? { ...c, next_best_action: next } : c))
+              }
+            />
+          )}
+        </div>
+      </div>
 
       {/* Hero row: Health Score gauge + key stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 mb-5 sm:mb-6">
@@ -220,7 +255,10 @@ export default function Dashboard() {
 
         {/* Recent Insights / Upcoming Risks */}
         <GlassCard>
-          <p className="text-sm text-fog mb-4">Recent Insights &amp; Risks</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-fog">More opportunities</p>
+            <a href="/insights" className="text-xs text-mint hover:underline">See all</a>
+          </div>
           <div className="space-y-3">
             {insights.map((ins, i) => (
               <div key={i} className="flex gap-3 items-start p-3 rounded-xl bg-white/[0.03] border border-line transition-colors hover:border-mint/30">

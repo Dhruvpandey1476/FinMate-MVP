@@ -2,6 +2,7 @@ import type {
   Snapshot, CashflowPoint, Transaction, Goal, Insight, Memory, ChatMessage,
   Forecast, BudgetCategory, DebtPlan, Notification, PlanSummary,
   SimulationResult, RecurringItem, TraceStep, User,
+  SafeToSpend, EarlyWarningResponse, TimeMachine, NextBestAction, CoreLoop,
 } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
@@ -347,6 +348,25 @@ export const api = {
              duplicates_skipped: number; transactions: Partial<Transaction>[] }>("/api/upload/pdf", file),
   getDuplicates: () =>
     request<{ duplicate_groups: number; extra_rows: number }>("/api/upload/duplicates"),
+
+  // Tier 1 Core Loop
+  getCoreLoop: () => request<CoreLoop>("/api/dashboard/core"),
+  getSafeToSpend: (horizonDays = 14) =>
+    request<SafeToSpend>(`/api/safe-to-spend?horizon_days=${horizonDays}`),
+  getBalanceCheckpoint: () =>
+    request<{ exists: boolean; balance?: number; as_of?: string; stale_days?: number }>(
+      "/api/balance-checkpoint"
+    ),
+  addBalanceCheckpoint: (balance: number, note?: string) =>
+    request<{ ok: boolean; safe_to_spend: SafeToSpend }>("/api/balance-checkpoint", {
+      method: "POST", body: JSON.stringify({ balance, note }),
+    }),
+  getEarlyWarning: () => request<EarlyWarningResponse>("/api/early-warning"),
+  getTimeMachine: (months = 12) => request<TimeMachine>(`/api/time-machine?months=${months}`),
+  runTimeMachine: (data: { months: number; what_if_amount?: number; what_if_monthly?: number }) =>
+    request<TimeMachine>("/api/time-machine", { method: "POST", body: JSON.stringify(data) }),
+  getNextBestAction: (refresh = false) =>
+    request<NextBestAction>(`/api/next-best-action?refresh=${refresh}`),
 
   // Health
   getHealth: () => request<Record<string, unknown>>("/api/health"),

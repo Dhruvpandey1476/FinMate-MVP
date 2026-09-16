@@ -244,3 +244,103 @@ export interface User {
   plan: string;
   entitlements?: PlanSummary;
 }
+
+// --- Tier 1 Core Loop -------------------------------------------------------
+
+export interface SafeToSpendBill {
+  label: string;
+  category: string;
+  amount: number;
+  due_date: string;
+  confidence: number;
+}
+
+export interface SafeToSpend {
+  safe_to_spend: number;
+  is_negative: boolean;
+  horizon_days: number;
+  balance: {
+    amount: number;
+    basis: "checkpoint" | "ledger";
+    as_of: string | null;
+    stale_days: number | null;
+    confirmed_balance: number | null;
+    net_since_checkpoint: number | null;
+    /** Never implies a live bank feed — there is no Account Aggregator. */
+    label: string;
+  };
+  deductions: {
+    upcoming_bills: { total: number; items: SafeToSpendBill[] };
+    goal_contributions: {
+      total: number;
+      items: { goal: string; amount: number; note?: string;
+               monthly_target?: number; already_set_aside?: number }[];
+    };
+    safety_buffer: { total: number; basis: string };
+  };
+  needs_checkpoint: boolean;
+  summary: string;
+}
+
+export interface EarlyWarning {
+  key: string;
+  kind: "category_pace" | "cash_crunch" | "unusual_transaction" | "stale_balance";
+  severity: "critical" | "warn" | "info";
+  category: string | null;
+  amount: number;
+  message: string;
+  detail?: Record<string, unknown>;
+}
+
+export interface EarlyWarningResponse {
+  count: number;
+  highest_severity: string | null;
+  warnings: EarlyWarning[];
+}
+
+export interface KeyMoment {
+  month_index: number;
+  label: string;
+  title: string;
+  kind: "goal" | "emergency_fund";
+}
+
+export interface TimeMachine {
+  months: number;
+  month_labels: string[];
+  baseline_net_worth: number[];
+  projected_net_worth: number[];
+  real_net_worth: number[];
+  key_moments: KeyMoment[];
+  what_if: {
+    type: string;
+    amount: number;
+    delta_at_end: number;
+    opportunity_cost?: number;
+    true_cost?: number;
+    summary?: string;
+  } | null;
+  assumptions: Record<string, unknown>;
+  headline: string;
+}
+
+export interface NextBestAction {
+  action_text: string;
+  why_text: string;
+  estimated_impact: number;
+  estimated_impact_months?: number;
+  source_module: string | null;
+  kind?: string;
+  score?: number;
+  considered: number;
+  /** Always "deterministic_scoring" — the model phrases, it does not choose. */
+  decided_by: string;
+  runners_up?: { action_text: string; score: number; source: string }[];
+}
+
+export interface CoreLoop {
+  safe_to_spend: SafeToSpend | null;
+  early_warning: EarlyWarning[] | null;
+  time_machine: TimeMachine | null;
+  next_best_action: NextBestAction | null;
+}
