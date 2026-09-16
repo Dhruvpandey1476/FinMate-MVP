@@ -92,11 +92,16 @@ def seed_for_user(db: Session, user: models.User):
                 type="income", merchant="Side Project", is_recurring=False,
             )
 
+        # The current month is only partly elapsed, so cap generated days at
+        # today. Seeding to the 28th regardless produces future-dated spending,
+        # which inflates this month's totals and reads as wrong in a demo.
+        last_day = min(28, now.day) if month_offset == 0 else 28
+
         for category, (lo, hi, count) in EXPENSE_CATEGORIES.items():
             is_recurring = category in RECURRING_MERCHANTS
             occurrences = count if not is_recurring else len(RECURRING_MERCHANTS[category])
             for i in range(occurrences):
-                day = min(28, random.randint(1, 28))
+                day = random.randint(1, last_day)
                 amt = round(random.uniform(lo, hi), -1) if lo != hi else lo
                 merchant = (
                     RECURRING_MERCHANTS[category][i % len(RECURRING_MERCHANTS[category])]
@@ -110,12 +115,12 @@ def seed_for_user(db: Session, user: models.User):
         if month_offset == 0:
             for i in range(6):
                 _add_txn(
-                    db, user.id, seen_hashes, date=datetime(year, month, min(28, 3 + i * 4)),
+                    db, user.id, seen_hashes, date=datetime(year, month, min(last_day, 3 + i * 4)),
                     amount=-random.uniform(350, 700), category="Food Delivery",
                     type="expense", merchant="Swiggy/Zomato", is_recurring=False,
                 )
             _add_txn(
-                db, user.id, seen_hashes, date=datetime(year, month, 18), amount=-6200,
+                db, user.id, seen_hashes, date=datetime(year, month, min(last_day, 18)), amount=-6200,
                 category="Shopping", type="expense", merchant="Electronics Store",
             )
 
@@ -149,22 +154,29 @@ def seed_for_user(db: Session, user: models.User):
     logger.info("Seeded sample data for user %d", user.id)
 
 
-# Demo data is anchored to the month it was generated in. Once the newest
-# transaction is older than this, the demo account's "current month" is empty
-# and every live figure - cash flow, savings rate, Safe-to-Spend - reads zero.
-DEMO_STALE_DAYS = 35
-
-
 def _demo_is_stale(db: Session, user: models.User) -> bool:
-    newest = (
-        db.query(models.Transaction.date)
-        .filter(models.Transaction.user_id == user.id)
-        .order_by(models.Transaction.date.desc())
+    """
+    Stale means the current month has no data - not that the newest row is some
+    number of days old.
+
+    A rolling window gets this wrong at exactly the point it matters: an account
+    seeded on 28 August has zero September rows, but on 16 September its newest
+    transaction is only 19 days old. Under a 35-day rule it is "fresh" while
+    cash flow, savings rate, Safe-to-Spend and the budget comparison all read
+    zero, because every one of them is scoped to the current month.
+    """
+    month_start = datetime.utcnow().replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
+    has_current_month = (
+        db.query(models.Transaction.id)
+        .filter(
+            models.Transaction.user_id == user.id,
+            models.Transaction.date >= month_start,
+        )
         .first()
     )
-    if not newest:
-        return True
-    return (datetime.utcnow() - newest[0]).days > DEMO_STALE_DAYS
+    return has_current_month is None
 
 
 def _reset_demo(db: Session, user: models.User) -> None:

@@ -309,3 +309,69 @@ class TestProjectionsUseARunRate:
         rate = financial_twin.monthly_run_rate(db, user.id)
         assert rate["months_used"] == 0
         assert "current month" in rate["basis"]
+
+
+class TestDemoSeedFreshness:
+    """
+    A demo account whose current month is empty makes every month-scoped figure
+    read zero - cash flow, savings rate, Safe-to-Spend, the budget comparison.
+    """
+
+    def test_stale_means_the_current_month_is_empty(self, db, user):
+        from app import seed_data
+
+        # Seeded late last month: recent by a rolling-window rule, but the
+        # current month has nothing in it.
+        month_start = datetime.utcnow().replace(day=1, hour=0, minute=0,
+                                                second=0, microsecond=0)
+        db.add(models.Transaction(
+            user_id=user.id, date=month_start - timedelta(days=3),
+            amount=-2500, category="Food", type="expense"))
+        db.commit()
+
+        assert seed_data._demo_is_stale(db, user) is True
+
+    def test_data_in_the_current_month_is_fresh(self, db, user):
+        from app import seed_data
+
+        db.add(_txn(user.id, -500, "Food"))
+        db.commit()
+        assert seed_data._demo_is_stale(db, user) is False
+
+    def test_empty_account_is_stale(self, db, user):
+        from app import seed_data
+        assert seed_data._demo_is_stale(db, user) is True
+
+    def test_seeded_data_never_lands_in_the_future(self, db, user):
+        """Future-dated spending inflates this month's totals."""
+        from app import seed_data
+
+        seed_data.seed_for_user(db, user)
+        db.commit()
+
+        newest = (
+            db.query(models.Transaction.date)
+            .filter(models.Transaction.user_id == user.id)
+            .order_by(models.Transaction.date.desc())
+            .first()[0]
+        )
+        assert newest.date() <= datetime.utcnow().date(), (
+            f"seed produced a future-dated transaction: {newest}"
+        )
+
+    def test_seeded_data_covers_the_current_month(self, db, user):
+        from app import seed_data
+
+        seed_data.seed_for_user(db, user)
+        db.commit()
+
+        month_start = datetime.utcnow().replace(day=1, hour=0, minute=0,
+                                                second=0, microsecond=0)
+        current = (
+            db.query(models.Transaction)
+            .filter(models.Transaction.user_id == user.id,
+                    models.Transaction.date >= month_start)
+            .count()
+        )
+        assert current > 0, "seed left the current month empty"
+        assert seed_data._demo_is_stale(db, user) is False
