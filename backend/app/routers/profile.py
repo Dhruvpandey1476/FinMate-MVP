@@ -297,18 +297,57 @@ def onboard(payload: dict, db: Session = Depends(get_db),
 
 
 @router.post("/load-sample")
-def load_sample(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
-    """Populate the current account with sample data so new users can explore."""
+def load_sample(reset: bool = False, db: Session = Depends(get_db),
+                user: models.User = Depends(get_current_user)):
+    """
+    Populate the current account with sample data so new users can explore.
+
+    Sample data is anchored to the month it is generated in, so an account
+    seeded weeks ago has an empty current month - every month-based figure
+    (cash flow, savings rate, Safe-to-Spend, the budget comparison) then reads
+    zero. `reset=true` clears this account's generated rows and regenerates
+    them against today, which is also what makes a demo repeatable.
+
+    Destructive, and deliberately explicit: it only ever touches the
+    authenticated user's own rows, and only when the flag is passed.
+    """
     has_data = db.query(models.Transaction).filter(
         models.Transaction.user_id == user.id
     ).first()
-    if has_data:
-        return {"message": "Account already has data.", "loaded": False}
+
+    if has_data and not reset:
+        return {
+            "message": "Account already has data. Pass reset=true to replace it "
+                       "with fresh sample data anchored to today.",
+            "loaded": False,
+        }
+
+    cleared = 0
+    if reset:
+        for model in (models.Transaction, models.Goal, models.Asset,
+                      models.Liability, models.Memory):
+            cleared += db.query(model).filter(
+                model.user_id == user.id
+            ).delete(synchronize_session=False)
+        for model in (models.InsightCache, models.Notification,
+                      models.BalanceCheckpoint):
+            db.query(model).filter(model.user_id == user.id).delete(
+                synchronize_session=False
+            )
+        db.commit()
 
     seed_data.seed_for_user(db, user)
+    db.commit()
     cache.invalidate(db, user.id)
     analytics.track_once(db, user.id, "data_present", {"via": "sample"})
-    return {"message": "Sample financial data loaded.", "loaded": True}
+    return {
+        "message": (
+            f"Replaced {cleared} rows with fresh sample data anchored to today."
+            if reset else "Sample financial data loaded."
+        ),
+        "loaded": True,
+        "reset": reset,
+    }
 
 
 @router.delete("/account")
