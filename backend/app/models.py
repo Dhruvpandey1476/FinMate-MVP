@@ -285,3 +285,80 @@ class ReportUnlock(Base):
     price_inr = Column(Integer, default=0)
     payment_ref = Column(String, nullable=True)  # real gateway ref, post-funding
     unlocked_at = Column(DateTime, default=datetime.utcnow)
+
+
+class GoalContributor(Base):
+    """
+    A named person contributing to a shared goal.
+
+    Weddings in India are rarely funded by one person - self, parents and
+    in-laws each commit an amount. Modelling them as line items against one
+    shared target is the difference between a goal tracker and something a
+    family can plan around together.
+    """
+    __tablename__ = "goal_contributors"
+    __table_args__ = (Index("ix_contrib_goal", "goal_id"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    goal_id = Column(Integer, ForeignKey("goals.id"), index=True)
+    name = Column(String, nullable=False)
+    relationship_label = Column(String, default="family")
+    monthly_amount = Column(Float, default=0.0)
+    committed_lump_sum = Column(Float, default=0.0)
+    contributed_so_far = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class FamilyMember(Base):
+    """
+    A link between two accounts, with an explicit permission grant.
+
+    Shared finances are the norm for Indian households, but consent has to be
+    real: a member is invited by email, accepts, and the owner controls what
+    they can see. Nothing is shared until status is accepted.
+    """
+    __tablename__ = "family_members"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "invited_email", name="uq_family_invite"),
+        Index("ix_family_owner", "owner_id", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), index=True)
+    member_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    invited_email = Column(String, index=True)
+    display_name = Column(String, nullable=True)
+    role = Column(String, default="viewer")     # viewer | contributor
+    status = Column(String, default="pending")  # pending | accepted | revoked
+
+    # Granular consent: net worth alone is a very different disclosure from
+    # every transaction, and one grant for both would be too blunt to be honest.
+    share_net_worth = Column(Boolean, default=True)
+    share_goals = Column(Boolean, default=True)
+    share_transactions = Column(Boolean, default=False)
+
+    invite_token = Column(String, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    accepted_at = Column(DateTime, nullable=True)
+
+
+class Donation(Base):
+    """
+    A logged donation, feeding the Tax-Ready Export.
+
+    is_80g_eligible is set by the user, never inferred. Whether an institution
+    is registered under 80G is a fact about that institution which FinMate
+    cannot verify, and guessing it would put a wrong claim in a tax document.
+    """
+    __tablename__ = "donations"
+    __table_args__ = (Index("ix_donation_user_date", "user_id", "donated_on"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    recipient = Column(String, nullable=False)
+    amount = Column(Float, nullable=False)
+    donated_on = Column(DateTime, default=datetime.utcnow)
+    is_80g_eligible = Column(Boolean, default=False)
+    receipt_ref = Column(String, nullable=True)
+    note = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

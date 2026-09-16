@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Fingerprint, MessageCircleHeart, Target,
   GitBranch, Lightbulb, History, Settings as SettingsIcon, Sparkles, Upload, LogOut, Menu, X,
-  TrendingUp, Landmark, FileText,
+  TrendingUp, Landmark, FileText, Users, ShieldCheck,
 } from "lucide-react";
 import clsx from "clsx";
 import { clearToken } from "@/lib/api";
@@ -20,6 +20,8 @@ const NAV = [
   { href: "/forecast", label: "Cash Forecast", icon: TrendingUp },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/debt", label: "Debt Optimizer", icon: Landmark },
+  { href: "/credit", label: "Credit Health", icon: ShieldCheck },
+  { href: "/family", label: "Family Wealth", icon: Users },
   { href: "/simulate", label: "Simulations", icon: GitBranch },
   { href: "/insights", label: "Insights", icon: Lightbulb },
   { href: "/reports", label: "Reports", icon: FileText },

@@ -3,7 +3,7 @@ import type {
   Forecast, BudgetCategory, DebtPlan, Notification, PlanSummary,
   SimulationResult, RecurringItem, TraceStep, User,
   SafeToSpend, EarlyWarningResponse, TimeMachine, NextBestAction, CoreLoop,
-  ReportMeta, GeneratedReport,
+  ReportMeta, GeneratedReport, FamilyView, CreditHealth, DonationRow,
 } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
@@ -369,6 +369,34 @@ export const api = {
              duplicates_skipped: number; transactions: Partial<Transaction>[] }>("/api/upload/pdf", file),
   getDuplicates: () =>
     request<{ duplicate_groups: number; extra_rows: number }>("/api/upload/duplicates"),
+
+  // Family Wealth
+  getFamily: () => request<FamilyView>("/api/family"),
+  inviteFamily: (data: Record<string, unknown>) =>
+    request<{ ok: boolean; message: string; invite_token?: string }>("/api/family/invite", {
+      method: "POST", body: JSON.stringify(data),
+    }),
+  acceptFamily: (token: string) =>
+    request<{ ok: boolean }>(`/api/family/accept?token=${encodeURIComponent(token)}`, { method: "POST" }),
+  revokeFamily: (id: number) => request(`/api/family/${id}`, { method: "DELETE" }),
+
+  // Credit Health
+  getCreditHealth: () => request<CreditHealth>("/api/credit-health"),
+
+  // Donations
+  getDonations: () =>
+    request<{ donations: DonationRow[]; total: number; eligible_total: number; note: string }>("/api/donations"),
+  addDonation: (data: Record<string, unknown>) =>
+    request("/api/donations", { method: "POST", body: JSON.stringify(data) }),
+  deleteDonation: (id: number) => request(`/api/donations/${id}`, { method: "DELETE" }),
+
+  // Goal contributors
+  getContributors: (goalId: number) =>
+    request<Record<string, unknown>>(`/api/goals/${goalId}/contributors`),
+  addContributor: (goalId: number, data: Record<string, unknown>) =>
+    request(`/api/goals/${goalId}/contributors`, { method: "POST", body: JSON.stringify(data) }),
+  removeContributor: (goalId: number, id: number) =>
+    request(`/api/goals/${goalId}/contributors/${id}`, { method: "DELETE" }),
 
   // Paid outcomes
   getReports: () => request<ReportMeta[]>("/api/reports/"),

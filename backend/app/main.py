@@ -23,7 +23,8 @@ from . import seed_data, models  # noqa: E402
 from .database_migrations import ensure_schema, post_migration_backfill  # noqa: E402
 from .routers import (  # noqa: E402
     twin, chat, goals, simulate, insights, memory, profile, upload, waitlist,
-    forecast, debt, notifications, dashboard, quickadd, reports, auth as auth_router,
+    forecast, debt, notifications, dashboard, quickadd, reports, tier4,
+    b2b_intelligence, auth as auth_router,
 )
 from .services.memory_engine import ensure_collection, reindex_all  # noqa: E402
 from .services.wealth_graph import sync_graph  # noqa: E402
@@ -195,6 +196,8 @@ app.include_router(notifications.router)
 app.include_router(dashboard.router)
 app.include_router(quickadd.router)
 app.include_router(reports.router)
+app.include_router(tier4.router)
+app.include_router(b2b_intelligence.router)
 
 
 @app.get("/")
@@ -208,6 +211,7 @@ def root():
             "AI CFO (LangGraph)", "Scenario Simulator", "Goal Planner",
             "Opportunity Discovery", "Cash-Flow Forecast", "Debt Optimizer",
             "Safe-to-Spend", "Early Warning", "Time Machine", "Next Best Action",
+            "Family Wealth", "Credit Health", "Wedding Planner",
         ],
         "infrastructure": ["PostgreSQL", "Qdrant Vector DB", "Neo4j Graph DB"],
     }

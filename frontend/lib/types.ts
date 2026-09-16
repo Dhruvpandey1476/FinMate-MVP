@@ -363,3 +363,57 @@ export interface GeneratedReport {
   generated_at: string;
   data: Record<string, unknown>;
 }
+
+// --- Tier 4 -----------------------------------------------------------------
+
+export interface FamilyMemberView {
+  link_id: number | null;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  linked: boolean;
+  is_owner?: boolean;
+  net_worth: number | null;
+  monthly_cash_flow?: number;
+  health_score?: number;
+  goals?: { name: string; target: number; saved: number; percent: number }[] | null;
+  shares: { net_worth: boolean; goals: boolean; transactions: boolean };
+  note?: string;
+}
+
+export interface FamilyView {
+  members: FamilyMemberView[];
+  combined_net_worth: number;
+  combined_monthly_cash_flow: number;
+  counted: number;
+  withheld: number;
+  pending_invites: number;
+  note: string;
+}
+
+export interface CreditHealth {
+  score: number;
+  band: string;
+  band_note: string;
+  factors: { label: string; points: number; value: string; detail: string }[];
+  utilisation_pct: number;
+  debt_to_income_pct: number;
+  monthly_obligations: number;
+  monthly_income: number;
+  total_debt: number;
+  obligations: { name: string; type: string; balance: number; rate: number; monthly_payment: number }[];
+  bureau_score: null;
+  bureau_note: string;
+  improvements: { action: string; why: string }[];
+}
+
+export interface DonationRow {
+  id: number;
+  recipient: string;
+  amount: number;
+  donated_on: string;
+  is_80g_eligible: boolean;
+  receipt_ref?: string | null;
+  note?: string | null;
+}

@@ -93,6 +93,100 @@ def _monthly(txns):
     ]
 
 
+
+def _merchant_leaderboard(txns, limit=10):
+    """Who actually took the money, and how often."""
+    agg = defaultdict(lambda: {"total": 0.0, "count": 0})
+    for t in txns:
+        if t.amount >= 0:
+            continue
+        key = (t.merchant or t.category or "Unknown").strip()
+        agg[key]["total"] += abs(t.amount)
+        agg[key]["count"] += 1
+    rows = [
+        {"merchant": k, "total": round(v["total"], 2), "count": v["count"],
+         "average": round(v["total"] / v["count"], 2)}
+        for k, v in agg.items()
+    ]
+    rows.sort(key=lambda r: -r["total"])
+    return rows[:limit]
+
+
+def _weekday_split(txns):
+    """Weekday versus weekend spending - a habit most people cannot self-report."""
+    weekday = weekend = 0.0
+    wd_days: set = set()
+    we_days: set = set()
+    for t in txns:
+        if t.amount >= 0:
+            continue
+        if t.date.weekday() >= 5:
+            weekend += abs(t.amount)
+            we_days.add(t.date.date())
+        else:
+            weekday += abs(t.amount)
+            wd_days.add(t.date.date())
+    return {
+        "weekday_total": round(weekday, 2),
+        "weekend_total": round(weekend, 2),
+        "weekday_daily_average": round(weekday / max(len(wd_days), 1), 2),
+        "weekend_daily_average": round(weekend / max(len(we_days), 1), 2),
+    }
+
+
+def _category_trend(txns, category_totals):
+    """First half versus second half of the period, per category."""
+    if not txns:
+        return []
+    dates = sorted(t.date for t in txns)
+    midpoint = dates[len(dates) // 2]
+
+    first, second = defaultdict(float), defaultdict(float)
+    for t in txns:
+        if t.amount >= 0:
+            continue
+        (first if t.date < midpoint else second)[t.category or "Other"] += abs(t.amount)
+
+    out = []
+    for category in category_totals:
+        a, b = first.get(category, 0), second.get(category, 0)
+        if a <= 0:
+            continue
+        change = (b - a) / a * 100
+        out.append({
+            "category": category,
+            "earlier": round(a, 2),
+            "later": round(b, 2),
+            "change_pct": round(change, 1),
+            "direction": "up" if change > 5 else "down" if change < -5 else "flat",
+        })
+    out.sort(key=lambda r: -abs(r["change_pct"]))
+    return out
+
+
+def _biggest_transactions(txns, limit=5):
+    spends = [t for t in txns if t.amount < 0]
+    spends.sort(key=lambda t: t.amount)
+    return [
+        {"date": t.date.date().isoformat(), "amount": round(abs(t.amount), 2),
+         "merchant": t.merchant or "-", "category": t.category}
+        for t in spends[:limit]
+    ]
+
+
+def _savings_streak(monthly):
+    """Consecutive months ending in surplus, most recent backwards."""
+    streak = 0
+    for month in reversed(monthly):
+        if month["savings"] > 0:
+            streak += 1
+        else:
+            break
+    positive = sum(1 for m in monthly if m["savings"] > 0)
+    return {"current_streak": streak, "positive_months": positive,
+            "total_months": len(monthly)}
+
+
 # --- 1. Money Wrapped -------------------------------------------------------
 
 def money_wrapped(db: Session, user_id: int) -> dict:
@@ -146,6 +240,17 @@ def money_wrapped(db: Session, user_id: int) -> dict:
                         "share": round(v / total_spend * 100, 1) if total_spend else 0}
                        for c, v in list(categories.items())[:8]],
         "monthly": monthly,
+        "merchants": _merchant_leaderboard(txns),
+        "weekday_split": _weekday_split(txns),
+        "biggest_transactions": _biggest_transactions(txns),
+        "trends": _category_trend(txns, categories),
+        "streak": _savings_streak(monthly),
+        "averages": {
+            "per_month": round(total_spend / max(len(monthly), 1), 2),
+            "per_transaction": round(
+                total_spend / max(len([t for t in txns if t.amount < 0]), 1), 2),
+            "per_day": round(total_spend / max(len(monthly) * 30, 1), 2),
+        },
         "disclaimer": SELF_REPORTED,
     }
 
@@ -175,6 +280,16 @@ def financial_health(db: Session, user_id: int) -> dict:
                         "monthly_average": round(v / max(len(monthly), 1), 2)}
                        for c, v in categories.items()],
         "cashflow_series": financial_twin.monthly_cashflow_series(db, user_id, 6),
+        "merchants": _merchant_leaderboard(txns),
+        "trends": _category_trend(txns, categories),
+        "streak": _savings_streak(monthly),
+        "biggest_transactions": _biggest_transactions(txns),
+        "weekday_split": _weekday_split(txns),
+        "recurring_commitments": [
+            {"label": r["label"], "amount": r["amount"], "cadence": r["cadence"],
+             "monthly_equivalent": r["monthly_equivalent"], "next_due": r["next_due"]}
+            for r in forecast.detect_recurring(db, user_id)[:10]
+        ],
         "disclaimer": SELF_REPORTED,
     }
 
@@ -215,12 +330,26 @@ def tax_ready(db: Session, user_id: int) -> dict:
             ],
         })
 
-    # Donations are user-tagged, never inferred.
+    # Donations come from the donations ledger, where 80G eligibility is a flag
+    # the user set. Inferring it from a category name would put an unverified
+    # claim into a tax document.
+    since_dt = financial_twin._add_months(
+        financial_twin._month_start(datetime.utcnow()), -11)
+    donation_rows = (
+        db.query(models.Donation)
+        .filter(models.Donation.user_id == user_id,
+                models.Donation.donated_on >= since_dt)
+        .order_by(models.Donation.donated_on.desc())
+        .all()
+    )
     donations = [
-        {"date": t.date.date().isoformat(), "amount": round(abs(t.amount), 2),
-         "recipient": t.merchant or "Unnamed", "note": t.note}
-        for t in txns if (t.category or "").lower() == "donation"
+        {"date": d.donated_on.date().isoformat(), "amount": round(d.amount, 2),
+         "recipient": d.recipient, "is_80g_eligible": d.is_80g_eligible,
+         "receipt_ref": d.receipt_ref, "note": d.note}
+        for d in donation_rows
     ]
+    donations_eligible = round(
+        sum(d.amount for d in donation_rows if d.is_80g_eligible), 2)
 
     income = sum(t.amount for t in txns if t.amount > 0)
     headroom = []
@@ -244,7 +373,15 @@ def tax_ready(db: Session, user_id: int) -> dict:
         "flagged_total": round(flagged_total, 2),
         "sections": sections,
         "donations": donations,
+        "donations_total": round(sum(d["amount"] for d in donations), 2),
+        "donations_80g_marked": donations_eligible,
+        "donations_note": (
+            "80G eligibility is what you marked. Whether an institution is "
+            "registered under 80G is a fact FinMate cannot verify - check your receipt."
+        ),
         "headroom": headroom,
+        "monthly_breakdown": _monthly(txns),
+        "merchants": _merchant_leaderboard(txns, limit=15),
         "reference_facts": tax_kb.FACTS,
         "disclaimer": tax_kb.DISCLAIMER,
     }
@@ -417,6 +554,15 @@ def net_worth(db: Session, user_id: int) -> dict:
         "total_assets": round(total_assets, 2),
         "total_liabilities": round(total_liabilities, 2),
         "net_worth": round(total_assets - total_liabilities, 2),
+        "composition": [
+            {"type": k, "value": round(v, 2),
+             "share": round(v / total_assets * 100, 1) if total_assets else 0}
+            for k, v in grouped.items()
+        ],
+        "leverage_ratio": round(total_liabilities / total_assets * 100, 1) if total_assets else 0,
+        "liquid_assets": round(
+            sum(a.value or 0 for a in assets
+                if (a.asset_type or "").lower() in ("cash", "savings", "bank")), 2),
         "disclaimer": SELF_REPORTED,
     }
 
