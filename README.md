@@ -105,6 +105,25 @@ alembic revision --autogenerate -m "describe the change"
 alembic upgrade head
 ```
 
+## Refreshing demo data on a deployed instance
+
+Sample data is anchored to the month it is generated in, so an instance seeded
+in a previous month has an empty current month - and every month-scoped figure
+(cash flow, savings rate, Safe-to-Spend, the budget comparison) reads zero.
+
+The demo account re-anchors itself whenever the backend boots and finds the
+current month empty. To force it without a restart:
+
+```bash
+bash scripts/refresh-demo.sh https://your-api.onrender.com
+```
+
+It checks the backend is running current code, signs in as the demo account,
+regenerates six months ending today, and verifies the current month is
+populated. For any other account, call the same endpoint with that account's
+token: `POST /api/profile/load-sample?reset=true` (destructive, and scoped to
+the caller's own rows).
+
 ## Operational notes
 
 - **Model ids drift.** Providers decommission models without notice
