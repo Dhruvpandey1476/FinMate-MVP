@@ -264,3 +264,24 @@ class MerchantRule(Base):
     hit_count = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ReportUnlock(Base):
+    """
+    Which paid reports an account has unlocked.
+
+    Persisted rather than held in the session so an unlock survives a reload -
+    a user who paid and then lost access on refresh would be right to complain.
+    The payment itself is mocked for now; see routers/reports.py.
+    """
+    __tablename__ = "report_unlocks"
+    __table_args__ = (
+        UniqueConstraint("user_id", "report_id", name="uq_report_unlock"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    report_id = Column(String, index=True)
+    price_inr = Column(Integer, default=0)
+    payment_ref = Column(String, nullable=True)  # real gateway ref, post-funding
+    unlocked_at = Column(DateTime, default=datetime.utcnow)

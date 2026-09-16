@@ -270,3 +270,42 @@ select option { background: rgb(var(--c-panel)); color: rgb(var(--c-fg)); }
   --wa-send: 37 211 102;
   --wa-send-fg: 11 20 26;
 }
+
+/* ---------------------------------------------------------------------------
+   Print - "Save as PDF" for the paid reports.
+
+   The browser's own print-to-PDF renders the same styled view, so there is no
+   PDF library and no system libraries in the image. Printing forces the light
+   palette: a dark report wastes ink and reads badly on paper.
+--------------------------------------------------------------------------- */
+@media print {
+  :root, [data-theme="dark"] {
+    --c-ink: 255 255 255;
+    --c-panel: 255 255 255;
+    --c-line: 210 210 210;
+    --c-fg: 17 17 17;
+    --c-fog: 60 60 60;
+    --c-mist: 90 90 90;
+    --c-mint: 4 120 87;
+    --c-violet: 79 50 180;
+    --c-gold: 140 90 10;
+    --c-rose: 180 40 55;
+    --glass-bg: 255 255 255;
+    --glass-alpha: 1;
+    --glass-strong-alpha: 1;
+    --bg-glow: none;
+    --shadow-glass: none;
+    --shadow-lift: none;
+  }
+  html, body { background: #fff !important; }
+  aside, header, nav, form, .print\:hidden { display: none !important; }
+  main { padding: 0 !important; }
+  .glass, .glass-strong {
+    backdrop-filter: none !important;
+    border: 1px solid rgb(var(--c-line)) !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .report-doc > * { break-inside: avoid; }
+  a[href]::after { content: ""; }
+}

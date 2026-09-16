@@ -3,6 +3,7 @@ import type {
   Forecast, BudgetCategory, DebtPlan, Notification, PlanSummary,
   SimulationResult, RecurringItem, TraceStep, User,
   SafeToSpend, EarlyWarningResponse, TimeMachine, NextBestAction, CoreLoop,
+  ReportMeta, GeneratedReport,
 } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
@@ -368,6 +369,12 @@ export const api = {
              duplicates_skipped: number; transactions: Partial<Transaction>[] }>("/api/upload/pdf", file),
   getDuplicates: () =>
     request<{ duplicate_groups: number; extra_rows: number }>("/api/upload/duplicates"),
+
+  // Paid outcomes
+  getReports: () => request<ReportMeta[]>("/api/reports/"),
+  unlockReport: (id: string) =>
+    request<{ ok: boolean; message: string }>(`/api/reports/${id}/unlock`, { method: "POST" }),
+  getReport: (id: string) => request<GeneratedReport>(`/api/reports/${id}`),
 
   // Quick Add
   quickAdd: (text: string) =>

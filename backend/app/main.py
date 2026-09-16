@@ -23,7 +23,7 @@ from . import seed_data, models  # noqa: E402
 from .database_migrations import ensure_schema, post_migration_backfill  # noqa: E402
 from .routers import (  # noqa: E402
     twin, chat, goals, simulate, insights, memory, profile, upload, waitlist,
-    forecast, debt, notifications, dashboard, quickadd, auth as auth_router,
+    forecast, debt, notifications, dashboard, quickadd, reports, auth as auth_router,
 )
 from .services.memory_engine import ensure_collection, reindex_all  # noqa: E402
 from .services.wealth_graph import sync_graph  # noqa: E402
@@ -194,6 +194,7 @@ app.include_router(debt.router)
 app.include_router(notifications.router)
 app.include_router(dashboard.router)
 app.include_router(quickadd.router)
+app.include_router(reports.router)
 
 
 @app.get("/")

@@ -344,3 +344,22 @@ export interface CoreLoop {
   time_machine: TimeMachine | null;
   next_best_action: NextBestAction | null;
 }
+
+// --- Paid outcomes ----------------------------------------------------------
+
+export interface ReportMeta {
+  id: string;
+  title: string;
+  blurb: string;
+  price_inr: number;
+  emoji: string;
+  unlocked: boolean;
+}
+
+export interface GeneratedReport {
+  id: string;
+  title: string;
+  emoji: string;
+  generated_at: string;
+  data: Record<string, unknown>;
+}
